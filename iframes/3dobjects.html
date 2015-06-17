@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+<script type="text/javascript" src="../includes.js"></script>
 <head>
 	<title>3D rendering</title>
 	<meta charset="utf-8">
@@ -11,9 +12,11 @@
 
 	<script>"use strict";</script>
 
-	<script src="../lib/tween.js/src/Tween.js"></script>
-	<script src="../lib/three.js/build/three.min.js"></script>
-	<script src="../lib/threex.windowresize/threex.windowresize.js"></script>
+	<script>
+		addScript('three', 'build/three.min.js', '../');
+		addScript('threex.windowresize', 'threex.windowresize.js', '../');
+		addScript('tween', 'src/Tween.js', '../');
+	</script>
 	<script src="state.js"></script>
 
 </head>
