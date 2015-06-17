@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+<script type="text/javascript" src="includes.js"></script>
 <head>
 	<meta charset="utf-8">
 
@@ -13,26 +14,22 @@
 
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
 
-	<link rel="stylesheet" href="lib/reveal.js/css/reveal.css">
-	<link rel="stylesheet" href="lib/reveal.js/css/theme/black.css" id="theme">
-
-	<!-- Code syntax highlighting -->
-	<link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
-
-	<!-- Printing and PDF exports -->
 	<script>
-		var link = document.createElement('link');
-		link.rel = 'stylesheet';
-		link.type = 'text/css';
-		link.href = window.location.search.match(/print-pdf/gi) ? 'lib/reveal.js/css/print/pdf.css' : 'lib/reveal.js/css/print/paper.css';
-		document.getElementsByTagName('head')[0].appendChild( link );
+		addCSS('reveal', 'css/reveal.css');
+		addCSS('reveal', 'css/theme/black.css', 'id="theme"');
+		addCSS('reveal', 'lib/css/zenburn.css');
+		// Printing and PDF exports
+		if (window.location.search.match(/print-pdf/gi))
+			addCSS('reveal', 'css/print/pdf.css');
+		else
+			addCSS('reveal', 'css/print/paper.css');
+
+		addScript('reveal', 'lib/js/head.min.js');
+		addScript('reveal', 'js/reveal.js');
 	</script>
 
 	<!-- Style for presentation elements -->
 	<link rel="stylesheet" href="style.css">
-
-	<script src="lib/reveal.js/lib/js/head.min.js"></script>
-	<script src="lib/reveal.js/js/reveal.js"></script>
 
 	<script>
 	"use strict";
@@ -826,12 +823,12 @@
 
 		// Optional reveal.js plugins
 		dependencies: [
-			{ src: 'lib/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-			{ src: 'lib/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-			{ src: 'lib/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
-			{ src: 'lib/reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
-			{ src: 'lib/reveal.js/plugin/zoom-js/zoom.js', async: true },
-			{ src: 'lib/reveal.js/plugin/notes/notes.js', async: true }
+			{ src: getLibFile('reveal', 'lib/js/classList.js'), condition: function() { return !document.body.classList; } },
+			{ src: getLibFile('reveal', 'plugin/markdown/marked.js'), condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+			{ src: getLibFile('reveal', 'plugin/markdown/markdown.js'), condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+			{ src: getLibFile('reveal', 'plugin/highlight/highlight.js'), async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+			{ src: getLibFile('reveal', 'plugin/zoom-js/zoom.js'), async: true },
+			{ src: getLibFile('reveal', 'plugin/notes/notes.js'), async: true }
 		]
 	});
 
