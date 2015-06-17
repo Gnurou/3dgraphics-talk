@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>three.js</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+	<script src="../lib/raphael/raphael.js"></script>
+	<script src="state.js"></script>
+</head>
+
+<body>
+
+<script>
+
+var R = Raphael(0, 0, window.innerWidth, window.innerHeight);
+
+initComplete = true;
+
+var stateAction = [
+function() {
+	fb = R.rect(0, 0, R.width, R.height).attr({"fill": "#000000"});
+},
+function() {
+	rect = R.rect(200, 200, 100, 100).attr({"fill": "#00ff00"});
+},
+];
+
+function animate(time) {
+	return keepGoing;
+}
+
+startFrame();
+
+//var text = new textNode(50, 50, 50, 20, "Tralala");
+//text.text.attr({text: "Foo"});
+// Sets the fill attribute of the circle to red (#f00)
+//circle.attr("fill", "#f00");
+// Sets the stroke attribute of the circle to white
+//circle.attr("stroke", "#fff");
+</script>
+</body>

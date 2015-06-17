@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>3D rendering</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+
+	<script>"use strict";</script>
+
+	<script src="../lib/tween.js/src/Tween.js"></script>
+	<script src="../lib/three.js/build/three.min.js"></script>
+	<script src="../lib/threex.windowresize/threex.windowresize.js"></script>
+	<script src="state.js"></script>
+
+</head>
+
+<body onkeyup="onKeyEvent(event)">
+<script>
+	"use strict";
+
+	var renderer = new THREE.WebGLRenderer({antialias:true, alpha: true});
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 30);
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	// Used to rotate the camera around the scene easily
+	var cameraContainer = new THREE.Object3D();
+	cameraContainer.add(camera);
+	scene.add(cameraContainer);
+
+	THREEx.WindowResize(renderer, camera);
+
+	function SmoothTween(obj) {
+		TWEEN.Tween.call(this, obj);
+		this.easing(TWEEN.Easing.Quadratic.InOut);
+	}
+	SmoothTween.prototype = Object.create(TWEEN.Tween.prototype);
+
+
+
+	function Axis() {
+		THREE.Object3D.call(this);
+
+		this.x = new THREE.ArrowHelper(
+			new THREE.Vector3(1, 0, 0),
+			new THREE.Vector3(0, 0, 0),
+			0,
+			0xff0000,
+			.2, .2);
+		this.add(this.x);
+		this.x.line.material.transparent = true;
+		this.x.cone.material.transparent = true;
+
+		this.y = new THREE.ArrowHelper(
+			new THREE.Vector3(0, 1, 0),
+			new THREE.Vector3(0, 0, 0),
+			0,
+			0x00ff00,
+			.2, .2);
+		this.add(this.y);
+		this.y.line.material.transparent = true;
+		this.y.cone.material.transparent = true;
+
+		this.z = new THREE.ArrowHelper(
+			new THREE.Vector3(0, 0, 1),
+			new THREE.Vector3(0, 0, 0),
+			0,
+			0x0000ff,
+			.2, .2);
+		this.add(this.z);
+		this.z.line.material.transparent = true;
+		this.z.cone.material.transparent = true;
+
+		this.axisUpdate = function() {
+			this.axis.setLength(this.m, .2, .2);
+		}
+
+		this.x.meter = { m: 0, axis: this.x };
+		this.x.tween = new TWEEN.Tween(this.x.meter)
+			.to({ m: 4 })
+			.onUpdate(this.axisUpdate);
+		this.y.meter = { m: 0, axis: this.y };
+		this.y.tween = new TWEEN.Tween(this.y.meter)
+			.to({ m: 4 })
+			.onUpdate(this.axisUpdate);
+		this.z.meter = { m: 0, axis: this.z };
+		this.z.tween = new TWEEN.Tween(this.z.meter)
+			.to({ m: 4 })
+			.onUpdate(this.axisUpdate);
+	}
+	Axis.prototype = Object.create(THREE.Object3D.prototype);
+	Axis.prototype.constructor = Axis;
+
+
+	function Display(dw, dh, dsw, dsh) {
+		var displayGeo = new THREE.BufferGeometry();
+		var pixelGeo = new THREE.BufferGeometry();
+		var pixelArray = [];
+
+		THREE.Object3D.call(this);
+
+		displayGeo.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+			-dw, -dh, 0,
+			dw, -dh, 0,
+			dw,  dh, 0,
+			-dw,  dh, 0,
+			-dw, -dh, 0,
+		]), 3));
+
+		this.frame = new THREE.Line(displayGeo, new THREE.LineBasicMaterial({
+			color: 0xffffff,
+		transparent:true,
+			linewidth: 3,
+		}), THREE.LineStrip);
+
+		for (var i = -dh + dsh; i < dh; i += dsh) {
+			pixelArray.push(-dw);
+			pixelArray.push(i);
+			pixelArray.push(0);
+			pixelArray.push(dw);
+			pixelArray.push(i);
+			pixelArray.push(0);
+		}
+		for (var i = -dw + dsw; i < dw; i += dsw) {
+			pixelArray.push(i);
+			pixelArray.push(-dh);
+			pixelArray.push(0);
+			pixelArray.push(i);
+			pixelArray.push(dh);
+			pixelArray.push(0);
+		}
+		pixelGeo.addAttribute('position', new THREE.BufferAttribute(new Float32Array(pixelArray), 3));
+		this.pixels = new THREE.Line(pixelGeo, new THREE.LineBasicMaterial({
+			color: 0xffffff,
+			transparent:true,
+			opacity: .5,
+			linewidth: .5,
+		}), THREE.LinePieces);
+
+		this.add(this.frame);
+		this.add(this.pixels);
+
+		this.renderBuffer = new THREE.WebGLRenderTarget(512, 512, {
+			magFilter: THREE.NearestFilter,
+			minFilter: THREE.NearestFilter,
+			wrapS: THREE.ClampToEdgeWrapping,
+			wrapT: THREE.ClampToEdgeWrapping
+		});
+
+		var planeGeo = new THREE.PlaneGeometry(dw * 2, dh * 2);
+		var planeMat = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			map: this.renderBuffer,
+			side: THREE.DoubleSide,
+		});
+		this.rendering = new THREE.Mesh(planeGeo, planeMat);
+		this.add(this.rendering);
+	}
+	Display.prototype = Object.create(THREE.Object3D.prototype);
+	Display.prototype.constructor = Display;
+
+
+	var Point = function() {
+		var pointMaterial = new THREE.PointCloudMaterial({
+			color: 0xffffff,
+			transparent: true,
+			size: 0.25,
+		});
+
+		return function(v) {
+			var geometry = new THREE.Geometry();
+			geometry.vertices.push(new THREE.Vector3(0, 0, 0));
+			var point = new THREE.PointCloud(geometry, pointMaterial);
+			point.position.set(v.x, v.y, v.z);
+			return point;
+		}
+	}();
+
+	var axis = new Axis();
+	scene.add(axis);
+
+	var ico = new THREE.Mesh(
+		new THREE.IcosahedronGeometry(1.5),
+		new THREE.MeshLambertMaterial({
+			color: 0xffffff,
+			emissive: 0xffffff,
+			shading: THREE.FlatShading,
+			wireframe: true,
+			side: THREE.DoubleSide,
+		}));
+
+	var point1 = Point(new THREE.Vector3());
+	point1.visible = false;
+
+	var point2 = Point(ico.geometry.vertices[0].clone().add(ico.position));
+	point2.visible = false;
+
+	var point3 = Point(ico.geometry.vertices[5].clone().add(ico.position));
+	point3.visible = false;
+
+	var points = new THREE.Object3D();
+	points.add(point1);
+	points.add(point2);
+	points.add(point3);
+
+	scene.add(points);
+
+
+
+
+
+	var observer = new THREE.Object3D();
+	observer.position.set(0, 0, 9.5);
+	var observerCamera = new THREE.PerspectiveCamera(30, 4.0 / 3.0, 0.1, 100000);
+	observerCamera.lookAt(scene.position);
+	observer.add(observerCamera);
+	observer.cameraHelper = new THREE.CameraHelper(observerCamera);
+	observer.cameraHelper.visible = false;
+	scene.add(observer.cameraHelper);
+	scene.add(observer);
+
+
+
+
+
+	var display = new Display(2, 1.5, 4 / 512, 3 / 512);
+	//display.position.set(0, 0, 6.5);
+	display.position.set(0, 0, 4);
+	display.pixels.visible = false;
+	display.visible = false;
+
+	scene.add(display);
+
+
+
+
+	function animate(time) {
+		time = time || window.performance.now();
+
+		TWEEN.update(time);
+
+		if (objects.icoNormals)
+			objects.icoNormals.update();
+
+		/*
+		 * render the scene with a transparent background if we are
+		 * embedded into an iframe
+		 */
+		renderer.setClearColor(0x000000, (window == window.top));
+		renderer.render(scene, camera);
+		// set black background for off-screen renderings
+		renderer.setClearColor(0x000000, 1);
+
+		return keepGoing;
+	}
+
+	function stop() {
+		var tweens = TWEEN.getAll();
+		for (var i = 0; i < tweens.length; i++)
+			tweens[i].stop();
+	}
+
+var objects = {
+};
+
+// TODO move these as children of scene!
+// Line connecting the first 3 points
+var line;
+// Projection lines from object to observer
+var lines;
+// Helper lines to explain the projection formula
+var helperLines;
+var cube;
+// Single face from the cube
+var singleFace;
+// Single plane from the cube
+var singlePlane;
+// Sprite to display texture
+var sprite;
+var dLight;
+var aLight;
+
+initComplete = true;
+
+var stateAction = [
+function() {
+	axis.x.meter.m = 0;
+	axis.x.setLength(0, .2, .2);
+	axis.x.visible = false;
+	axis.y.meter.m = 0;
+	axis.y.setLength(0, .2, .2);
+	axis.y.visible = false;
+	axis.z.meter.m = 0;
+	axis.z.setLength(0, .2, .2);
+	axis.z.visible = false;
+
+	point1.visible = false;
+	point2.visible = false;
+	point3.visible = false;
+
+
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	camera.position.set(1.5, 1.5, 12);
+
+	return ["3DSpace", ""];
+},
+function() {
+	axis.x.visible = true;
+	axis.x.tween.start();
+},
+function() {
+	axis.y.visible = true;
+	axis.y.tween.start();
+},
+function() {
+	axis.z.visible = true;
+	axis.z.tween.start();
+},
+function() {
+	point1.visible = true;
+	return ["pointVisible", ""];
+},
+function() {
+	point1.tweenx = new SmoothTween(point1.position)
+		.to({x: 3})
+		.repeat(1)
+		.yoyo(true)
+		.start();
+},
+function() {
+	point1.tweeny = new SmoothTween(point1.position)
+		.to({y: 3})
+		.repeat(1)
+		.yoyo(true)
+		.start();
+},
+function() {
+	point1.tweenz = new SmoothTween(point1.position)
+		.to({z: 3})
+		.repeat(1)
+		.yoyo(true)
+		.start();
+},
+function() {
+	return ["point4th", ""];
+},
+// Move point to final location
+function() {
+	point1.tweenx.stop();
+	point1.tweeny.stop();
+	point1.tweenz.stop();
+	point1.tweenMove = new SmoothTween(point1.position)
+		.to(ico.geometry.vertices[1], 300)
+		.onStop(function() {
+			this.copy(ico.geometry.vertices[1]);
+		})
+		.start();
+},
+// Second point visible
+function() {
+	point1.tweenMove.stop();
+	point2.visible = true;
+
+	return ["twoPoints", "pointVisible 3DSpace"];
+},
+// Draw line between two points
+function() {
+	var lineGeometry = new THREE.Geometry();
+	lineGeometry.vertices.push(point1.position);
+	lineGeometry.vertices.push(point2.position);
+	lineGeometry.vertices.push(point2.position);
+	lineGeometry.vertices.push(point1.position);
+	line = new THREE.Line(
+		lineGeometry,
+		new THREE.LineBasicMaterial({color: 0xffffff })
+	);
+	scene.add(line);
+},
+// Third point visible
+function() {
+	point3.visible = true;
+	return ["threePoints", ""];
+},
+// Draw line between 3 points
+function() {
+	line.geometry.vertices[2] = point3.position;
+	line.geometry.verticesNeedUpdate = true;
+},
+function() {
+	var newPos = {x: 0, y: 1, z: 13};
+	camera.tween = new SmoothTween(camera.position)
+		.to(newPos)
+		.chain(new TWEEN.Tween(cameraContainer.rotation)
+			.to({y: Math.PI * 2}, 10000)
+			.repeat(Infinity))
+		.start();
+},
+// Make icosahedron's faces appear progressively
+function() {
+	points.fadeTween = new TWEEN.Tween(point1.material)
+		.to({opacity: 0})
+		.onStop(function() {
+			this.opacity = 0;
+			scene.remove(line);
+			scene.remove(points);
+		})
+		.start();
+
+	var tmpIco;
+	ico.tween = new TWEEN.Tween({n: 2})
+		.to({n: ico.geometry.faces.length}, 3000)
+		.onUpdate(function() {
+			var n = Math.floor(this.n);
+
+			if (tmpIco && n <= tmpIco.geometry.faces.length)
+				return;
+
+			scene.remove(tmpIco);
+
+			var icoGeo = new THREE.IcosahedronGeometry(ico.geometry.parameters.radius);
+			icoGeo.faces = icoGeo.faces.slice(0, n);
+			tmpIco = new THREE.Mesh(icoGeo, ico.material);
+			tmpIco.position.copy(ico.position);
+
+			scene.add(tmpIco);
+		})
+		.onComplete(function() {
+			scene.remove(tmpIco);
+			scene.add(ico);
+		})
+		.onStop(function() {
+			scene.remove(tmpIco);
+			scene.add(ico);
+		})
+		.start();
+
+	return ["shape", ""];
+},
+// Transformation in local space
+function() {
+	points.fadeTween.stop();
+	ico.tween.stop();
+	camera.tween.stop();
+
+	camera.tween = new SmoothTween(cameraContainer.rotation)
+		.to({y: Math.PI * 2})
+		.onStop(function() {
+			this.y = 0;
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.position)
+		.to({x: 1.5, y: 1.5, z: 12})
+		.onStop(function() {
+			this.set(1.5, 1.5, 12);
+		})
+		.start();
+	return ["matrixMul matIdentity", "shape threePoints twoPoints"];
+},
+// Translation
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	ico.translateXTween = new SmoothTween(ico.position)
+		.to({x: 2})
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.setX(0);
+		})
+		.start();
+	return ["matTranslate", "matIdentity"];
+},
+function() {
+	ico.translateXTween.stop();
+	ico.translateYTween = new SmoothTween(ico.position)
+		.to({y: 2})
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.setY(0);
+		})
+		.start();
+},
+function() {
+	ico.translateYTween.stop();
+	ico.translateZTween = new SmoothTween(ico.position)
+		.to({z: 2})
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.setZ(0);
+		})
+		.start();
+},
+// Rotation
+function() {
+	ico.translateZTween.stop();
+	ico.rotateXTween = new TWEEN.Tween(ico.rotation)
+		.to({x: Math.PI * 2}, 3000)
+		.repeat(Infinity)
+		.onStop(function() {
+			this.set(0, 0, 0);
+		})
+		.start();
+	return ["matRotate", "matTranslate"];
+},
+function() {
+	ico.rotateXTween.stop();
+	ico.rotateYTween = new TWEEN.Tween(ico.rotation)
+		.to({y: Math.PI * 2}, 3000)
+		.repeat(Infinity)
+		.onStop(function() {
+			this.set(0, 0, 0);
+		})
+		.start();
+},
+function() {
+	ico.rotateYTween.stop();
+	ico.rotateZTween = new TWEEN.Tween(ico.rotation)
+		.to({z: Math.PI * 2}, 3000)
+		.repeat(Infinity)
+		.onStop(function() {
+			this.set(0, 0, 0);
+		})
+		.start();
+},
+// Scaling
+function() {
+	ico.rotateZTween.stop();
+	ico.scaleXTween = new SmoothTween(ico.scale)
+		.to({x: 2}, 1500)
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.set(1, 1, 1);
+		})
+		.start();
+	return ["matScale", "matRotate"];
+},
+function() {
+	ico.scaleXTween.stop();
+	ico.scaleYTween = new SmoothTween(ico.scale)
+		.to({y: 2}, 1500)
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.set(1, 1, 1);
+		})
+		.start();
+},
+function() {
+	ico.scaleYTween.stop();
+	ico.scaleZTween = new SmoothTween(ico.scale)
+		.to({z: 2}, 1500)
+		.repeat(Infinity)
+		.yoyo(true)
+		.onStop(function() {
+			this.set(1, 1, 1);
+		})
+		.start();
+},
+// Combined matrix
+function() {
+	ico.scaleZTween.stop();
+
+	return ["matCombi", "matScale"];
+},
+function() {
+	ico.moveTween = new SmoothTween(ico.position)
+		.to({x: 2, y: 1.5, z: -7})
+		.onStop(function() {
+			this.set(2, 1.5, -7);
+		})
+		.start();
+},
+function() {
+	ico.rotateTween = new SmoothTween(ico.rotation)
+		.to({x: Math.PI * .5, y: Math.PI * .75})
+		.onStop(function() {
+			this.set(Math.PI * .5, Math.PI * .75, 0);
+		})
+		.start();
+},
+// Recenter
+function() {
+	ico.moveTween.stop();
+	ico.rotateTween.stop();
+
+	ico.moveTween = new SmoothTween(ico.position)
+		.to({x: 0, y: 0, z: 0})
+		.onStop(function() {
+			this.set(0, 0, 0);
+		})
+		.start();
+	ico.rotateTween = new SmoothTween(ico.rotation)
+		.to({x: 0, y: 0, z: 0})
+		.onStop(function() {
+			this.set(0, 0, 0);
+		})
+		.start();
+},
+// Remove axis
+function() {
+	ico.moveTween.stop();
+	ico.rotateTween.stop();
+
+	camera.tween = new SmoothTween(camera.position)
+		.to(observer.position)
+		.onStop(function() {
+			this.copy(observer.position);
+		})
+		.start();
+	axis.fadeoutTween = new TWEEN.Tween({opacity: 1.0})
+		.to({opacity: 0.0}, 1500)
+		.onUpdate(function() {
+			axis.x.line.material.opacity = this.opacity;
+			axis.x.cone.material.opacity = this.opacity;
+			axis.y.line.material.opacity = this.opacity;
+			axis.y.line.material.opacity = this.opacity;
+			axis.z.cone.material.opacity = this.opacity;
+			axis.z.cone.material.opacity = this.opacity;
+		})
+		.onStop(function() {
+			scene.remove(axis);
+		})
+		.onComplete(function() {
+			scene.remove(axis);
+		})
+		.start();
+	return ["", "matrixMul matCombi"];
+},
+// Display appears
+function() {
+	camera.tween.stop();
+	axis.fadeoutTween.stop();
+
+	renderer.render(scene, observerCamera, display.renderBuffer);
+
+	display.visible = true;
+	display.frame.material.opacity = 0;
+	display.fadeInTween = new SmoothTween(display.frame.material)
+		.to({opacity: 1.0})
+		.start();
+	camera.tween = new SmoothTween(camera.position)
+		.to({z: observer.position.z + 3}, 2000)
+		.start();
+},
+// Camera moves upper right
+function() {
+	camera.tween.stop();
+
+	camera.tween = new SmoothTween(camera.position)
+		.to({x: 5, y: 5, z: display.position.z + 11}, 2000)
+		.onStop(function() {
+			this.set(5, 5, display.position.z + 11);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to(display.position, 2000)
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.copy(display.position);
+			camera.lookAt(this);
+		})
+		.start();
+},
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	observer.cameraHelper.visible = true;
+},
+function() {
+	display.visible = false;
+	ico.visible = false;
+	observer.cameraHelper.visible = false;
+	renderer.render(scene, observerCamera, display.renderBuffer);
+	observer.cameraHelper.visible = true;
+	ico.visible = true;
+	display.visible = true;
+},
+// Camera moves to side
+function() {
+	camera.tween = new SmoothTween(camera.position)
+		.to({x: 18, y: display.position.y, z: display.position.z})
+		.onStop(function() {
+			this.set(18, display.position.y, display.position.z);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to(display.position)
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.copy(display.position);
+			camera.lookAt(this);
+		})
+		.start();
+},
+// Project 1 vertex
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	lines = [];
+	var mat = new THREE.LineBasicMaterial({
+		color: 0xffffff,
+		linewidth: 3,
+		transparent: true,
+	});
+
+	for (var i = 0; i < ico.geometry.vertices.length; i++) {
+		var geo = new THREE.Geometry();
+		geo.vertices.push(ico.geometry.vertices[i]);
+		geo.vertices.push(observer.position);
+		lines[i] = new THREE.Line(geo, mat);
+		lines[i].visible = false;
+		scene.add(lines[i]);
+	}
+
+	lines[1].visible = true;
+},
+// Draw projection triangle
+function() {
+	ico.visible = false;
+	helperLines = new THREE.Object3D();
+
+	var vertex = lines[1].geometry.vertices[0];
+
+	function newLine(from, to, col) {
+		var geo = new THREE.Geometry();
+		geo.vertices.push(from);
+		geo.vertices.push(to);
+
+		return new THREE.Line(geo, new THREE.LineBasicMaterial({
+			color: col,
+			linewidth: 3,
+		}), THREE.LineStrips);
+	}
+
+	helperLines.add(newLine(observer.position, new THREE.Vector3(vertex.x, observer.position.y, display.position.z), 0xff0000));
+	helperLines.add(newLine(new THREE.Vector3(vertex.x, observer.position.y, display.position.z), new THREE.Vector3(vertex.x, observer.position.y, vertex.z), 0x00ff00));
+	helperLines.add(newLine(vertex, new THREE.Vector3(vertex.x, observer.position.y, vertex.z), 0x0000ff));
+	helperLines.add(newLine(new THREE.Vector3(vertex.x, observer.position.y, display.position.z), new THREE.Vector3(vertex.x + 10, observer.position.y + .3, display.position.z), 0xff00ff));
+
+	scene.add(helperLines);
+
+	return ["displayEquation", ""];
+},
+function() {
+	return ["displayEquation2", "displayEquation"];
+},
+// Move camera back to observer
+function() {
+	ico.visible = true;
+
+	scene.remove(helperLines);
+
+	camera.tween = new SmoothTween(camera.position)
+		.to({x: 5, y: 5, z: display.position.z + 11}, 2000)
+		.onStop(function() {
+			camera.position.set(5, 5, display.position.z + 11);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to(display.position, 2000)
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.copy(display.position);
+			camera.lookAt(this);
+		})
+		.start();
+
+	return ["", "displayEquation2"];
+},
+// Project all lines
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	display.projectionLinesTween = new TWEEN.Tween({n: 0})
+		.to({n: lines.length - 1}, 3000)
+		.onUpdate(function() {
+			var n = Math.floor(this.n);
+			lines[n].visible = true;
+		})
+		.onStop(function() {
+			for (var i = 0; i < lines.length; i++)
+				lines[i].visible = true;
+		})
+		.start();
+},
+// Make projected points appear on display
+function() {
+	display.projectionLinesTween.stop();
+
+	ico.pointCloud = new THREE.PointCloud(
+		ico.geometry.clone(),
+		new THREE.PointCloudMaterial({
+			color: 0xffffff,
+			size: 0.15,
+		}));
+	scene.add(ico.pointCloud);
+
+	// Update display's texture
+	display.visible = false;
+	ico.visible = false;
+	observer.cameraHelper.visible = false;
+	renderer.render(scene, observerCamera, display.renderBuffer);
+	observer.cameraHelper.visible = true;
+	ico.visible = true;
+	display.visible = true;
+	scene.remove(ico.pointCloud);
+
+	// Fade lines out
+	scene.tween = new TWEEN.Tween(lines[0].material)
+		.to({opacity: 0}, 1000)
+		.onStop(function() {
+			for (var i = 0; i < lines.length; i++)
+				scene.remove(lines[i]);
+		})
+		.start();
+},
+// Make faces appear on display progressively
+function() {
+	scene.tween.stop();
+
+	function renderTexture(obj) {
+		var n = Math.floor(obj.n);
+
+		if (tmpIco && n <= tmpIco.geometry.faces.length)
+			return;
+
+		var icoGeo = new THREE.IcosahedronGeometry(ico.geometry.parameters.radius);
+		icoGeo.faces = icoGeo.faces.slice(0, n);
+		tmpIco = new THREE.Mesh(icoGeo, ico.material);
+		tmpIco.position.copy(ico.position);
+
+		scene.add(tmpIco);
+		display.visible = false;
+		ico.visible = false;
+		observer.cameraHelper.visible = false;
+		renderer.render(scene, observerCamera, display.renderBuffer);
+		observer.cameraHelper.visible = true;
+		ico.visible = true;
+		display.visible = true;
+		scene.remove(tmpIco);
+	}
+
+	var tmpIco;
+	scene.tween = new TWEEN.Tween({n: 0 })
+		.to({n: ico.geometry.faces.length}, 3000)
+		.onUpdate(function() {
+			scene.add(ico.pointCloud);
+			renderTexture(this);
+			scene.remove(ico.pointCloud);
+		})
+		.onStop(function() {
+			scene.add(ico.pointCloud);
+			this.n = ico.geometry.faces.length;
+			renderTexture(this);
+			scene.remove(ico.pointCloud);
+		})
+		.start();
+},
+// Rotate icosahedron with display projection
+function() {
+	scene.tween.stop();
+
+	ico.tween = new TWEEN.Tween(ico.rotation)
+		.to({x: Math.PI * 2, y: Math.PI * 2, z: Math.PI * 2}, 2000)
+		.onUpdate(function() {
+			display.visible = false;
+			observer.cameraHelper.visible = false;
+			renderer.render(scene, observerCamera, display.renderBuffer);
+			observer.cameraHelper.visible = true;
+			display.visible = true;
+		})
+		.onStop(function() {
+			ico.rotation.set(0, 0, 0);
+			display.visible = false;
+			observer.cameraHelper.visible = false;
+			renderer.render(scene, observerCamera, display.renderBuffer);
+			observer.cameraHelper.visible = true;
+			display.visible = true;
+		})
+		.start();
+},
+// Zoom to display
+// TODO automatically compute coordinates to focus on right triangle
+function() {
+	ico.tween.stop();
+
+	observer.cameraHelper.visible = false;
+
+	camera.tween = new TWEEN.Tween(camera.position)
+		.to({
+			x: display.position.x - .5,
+			y: display.position.y + .4,
+			z: display.position.z + 1.9})
+		.onStop(function() {
+			camera.position.x = display.position.x - .5;
+			camera.position.y = display.position.y + .4;
+			camera.position.z = display.position.z + 1.9;
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to({
+			x: display.position.x - .5,
+			y: display.position.y + .4,
+			z: 0})
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.set(display.position.x - .5, display.position.y + .4, 0);
+			camera.lookAt(this);
+		})
+		.start();
+
+	display.pixels.visible = true;
+},
+// Focus on one triangle
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	var geo = new THREE.Geometry();
+	geo.vertices.push(ico.geometry.vertices[[ico.geometry.faces[0].a]]);
+	geo.vertices.push(ico.geometry.vertices[[ico.geometry.faces[0].b]]);
+	geo.vertices.push(ico.geometry.vertices[[ico.geometry.faces[0].c]]);
+
+	geo.faces.push(new THREE.Face3(0, 1, 2));
+	ico.singleMesh = new THREE.Mesh(geo, ico.material.clone());
+
+	scene.add(ico.singleMesh);
+
+	display.visible = false;
+	ico.visible = false;
+	renderer.render(scene, observerCamera, display.renderBuffer);
+	ico.visible = true;
+	display.visible = true;
+},
+// Fill triangle with color
+function() {
+	ico.singleMesh.material.emissive.setHex(0x8888ff);
+	ico.singleMesh.material.wireframe = false;
+
+	display.visible = false;
+	ico.visible = false;
+	renderer.render(scene, observerCamera, display.renderBuffer);
+	ico.visible = true;
+	display.visible = true;
+},
+// Move back to observer viewpoint and fade display out
+function() {
+	camera.tween = new SmoothTween(camera.position)
+		.to(observer.position)
+		.onStop(function() {
+			camera.position.copy(observer.position);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to(scene.position)
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.copy(scene.position);
+			camera.lookAt(this);
+		})
+		.start();
+
+	function fadeOutDone() {
+		display.pixels.visible = false;
+		display.frame.visible = false;
+		display.rendering.visible = false;
+		display.visible = false;
+		scene.remove(display);
+	}
+	display.fadeOutTween = new TWEEN.Tween(display.pixels.material)
+		.to({opacity: 0})
+		.onStop(fadeOutDone)
+		.onComplete(fadeOutDone)
+		.start();
+},
+// Render unicolor faces
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+	display.fadeOutTween.stop();
+
+	ico.visible = false;
+
+	var tmpIco;
+	ico.tween = new TWEEN.Tween({n: 1})
+		.to({n: ico.geometry.faces.length}, 3000)
+		.onUpdate(function() {
+			var n = Math.floor(this.n);
+
+			if (tmpIco && n <= tmpIco.geometry.faces.length)
+				return;
+
+			scene.remove(tmpIco);
+
+			var icoGeo = new THREE.IcosahedronGeometry(ico.geometry.parameters.radius);
+			icoGeo.faces = icoGeo.faces.slice(0, n);
+			tmpIco = new THREE.Mesh(icoGeo, ico.material.clone());
+			tmpIco.material.emissive.setHex(0x8888ff);
+			tmpIco.material.wireframe = false;
+			tmpIco.position.copy(ico.position);
+
+			scene.add(tmpIco);
+		})
+		.onStop(function() {
+			scene.remove(tmpIco);
+		})
+		.start();
+},
+// Display icosahedron with wireframe
+function() {
+	ico.tween.stop();
+	scene.remove(ico.singleMesh);
+	ico.visible = true;
+
+	ico.frame = new THREE.Mesh(ico.geometry.clone(), ico.material.clone());
+	ico.frame.material.wireframe = true;
+
+	ico.material.emissive.setHex(0x8888ff);
+	ico.material.wireframe = false;
+	scene.add(ico.frame);
+},
+// Move camera to side
+function() {
+	camera.tween = new SmoothTween(camera.position)
+		.to({x: 18, y: scene.position.y + 4, z: scene.position.z})
+		.onStop(function() {
+			camera.position.set(18, 4, scene.position.z);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to({x: scene.position.x, y: 2.5, z: scene.position.z})
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			this.set(scene.position.x, 2.5, scene.position.z);
+			camera.lookAt(this);
+		})
+		.start();
+},
+// Show light
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+
+	dLight = new THREE.DirectionalLight(0xffffff, 1);
+	dLight.position.set(0, 5, 2);
+	scene.add(dLight);
+	dLight.helper = new THREE.DirectionalLightHelper(dLight, 1);
+	dLight.helper.targetLine.material.color.setHex(0xffff00);
+	scene.add(dLight.helper);
+},
+// Show faces normals
+function() {
+	ico.normalHelper = new THREE.FaceNormalsHelper(ico, 2, 0x00ff00, 1);
+	scene.add(ico.normalHelper);
+},
+// Move camera to light viewpoint
+function() {
+	var dst = dLight.position.clone().add(new THREE.Vector3(.5, 5, 3));
+	camera.tween = new TWEEN.Tween(camera.position)
+		.to(dst)
+		.onUpdate(function() {
+			camera.lookAt(camera.lastLookAt);
+		})
+		.onStop(function() {
+			this.set(dst.x, dst.y, dst.z);
+			camera.lookAt(camera.lastLookAt);
+		})
+		.start();
+},
+// Enable flat shading
+function() {
+	camera.tween.stop();
+
+	ico.material.color.setHex(ico.material.emissive.getHex());
+	ico.material.emissive.setHex(0x000000);
+	ico.material.shading = THREE.FlatShading;
+
+	aLight = new THREE.AmbientLight(0x111111)
+	scene.add(aLight);
+
+	ico.material.needsUpdate = true;
+
+	scene.remove(ico.frame);
+},
+// Start icosahedron rotation
+function() {
+	ico.tween = new TWEEN.Tween(ico.rotation)
+		.to({z: Math.PI * 2}, 10000)
+		.repeat(Infinity)
+		.onUpdate(function() {
+			ico.normalHelper.rotation.z = this.z;
+			ico.normalHelper.update();
+		})
+		.onStop(function() {
+			this.z = ico.normalHelper.rotation.z = 0;
+			ico.normalHelper.update();
+		})
+		.start();
+},
+// Move camera to observer's viewpoint
+function() {
+	scene.remove(ico.normalHelper);
+	camera.tween = new SmoothTween(camera.position)
+		.to(observer.position)
+		.onStop(function() {
+			camera.position.copy(observer.position);
+		})
+		.start();
+	camera.tween2 = new SmoothTween(camera.lastLookAt)
+		.to(scene.position)
+		.onUpdate(function() {
+			camera.lookAt(this);
+		})
+		.onStop(function() {
+			camera.lastLookAt.copy(scene.position);
+			camera.lookAt(this);
+		})
+		.start();
+},
+// Remove light helper
+function() {
+	camera.tween.stop();
+	camera.tween2.stop();
+	scene.remove(dLight.helper);
+},
+// Remove icosahedron, make single face appear
+function() {
+	ico.byebyeTween = new SmoothTween(ico.position)
+		.to({y: 40})
+		.onStop(function() {
+			ico.tween.stop();
+			scene.remove(ico);
+		})
+		.start();
+
+	cube = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshLambertMaterial({
+		//color: 0xffffff,
+		//emissive: 0xffffff,
+		map: THREE.ImageUtils.loadTexture('cube.png'),
+		shading: THREE.FlatShading,
+		}));
+	cube.visible = false;
+	scene.add(cube);
+
+	var geo = new THREE.Geometry();
+	geo.vertices = cube.geometry.vertices;
+	geo.faces.push(cube.geometry.faces[8].clone());
+
+	singleFace = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+		color: 0xffffff,
+		emissive: 0xffffff,
+		side: THREE.DoubleSide,
+		shading: THREE.FlatShading,
+		}));
+
+	singleFace.position.setY(-40);
+
+	scene.add(singleFace);
+
+	singleFace.fadeIn = new SmoothTween(singleFace.position)
+		.to({y: 0})
+		.onStop(function() {
+			singleFace.position.setY(0);
+		})
+		.start();
+},
+// Display color points for face
+function() {
+	ico.byebyeTween.stop();
+	singleFace.fadeIn.stop();
+
+	var geo = new THREE.Geometry();
+	geo.vertices.push(cube.geometry.vertices[5]);
+	geo.vertices.push(cube.geometry.vertices[7]);
+	geo.vertices.push(cube.geometry.vertices[0]);
+
+	geo.colors = [
+		new THREE.Color(0xff0000),
+		new THREE.Color(0x00ff00),
+		new THREE.Color(0x0000ff),
+	];
+
+	singleFace.points = new THREE.PointCloud(geo, new THREE.PointCloudMaterial({
+		size: .25,
+		vertexColors: THREE.VertexColors,
+	}));
+	singleFace.add(singleFace.points);
+},
+// Color face by interpolation
+function() {
+	singleFace.geometry.faces[0].vertexColors = singleFace.points.geometry.colors;
+	singleFace.geometry.colorsNeedUpdate = true;
+	singleFace.material.vertexColors = THREE.VertexColors;
+	singleFace.material.needsUpdate = true;
+},
+// Rotate face
+function() {
+	singleFace.tween = new TWEEN.Tween(singleFace.rotation)
+		.to({y: Math.PI * 2}, 6000)
+		.repeat(Infinity)
+		.onStop(function() {
+			this.y = 0;
+		})
+		.start();
+},
+// Remove face, display plane
+function() {
+	singleFace.tween.stop();
+	singleFace.remove(singleFace.points);
+	scene.remove(singleFace);
+
+	var geo = new THREE.PlaneGeometry(2, 2);
+	var tmp = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+		color: 0xffffff,
+		emissive: 0xffffff,
+		side: THREE.DoubleSide,
+		shading: THREE.FlatShading,
+		}));
+	singlePlane = new THREE.Object3D();
+	singlePlane.plane = tmp;
+	singlePlane.add(tmp);
+	tmp.position.set(0, 0, 1);
+
+	dLight.visible = false;
+
+	scene.add(singlePlane);
+},
+// Show texture to be applied on plane
+function() {
+	sprite = new THREE.Sprite(
+		new THREE.SpriteMaterial({
+			map: THREE.ImageUtils.loadTexture('cube.png'),
+			color: 0xffffff,
+		}));
+
+	sprite.position.set(-2.5, 0, 0);
+	scene.add(sprite);
+
+	var geo = new THREE.Geometry();
+	geo.vertices.push(new THREE.Vector3(-3, .5, .0001));
+	geo.vertices.push(new THREE.Vector3(-3, -.5, .0001));
+	geo.vertices.push(new THREE.Vector3(-2, .5, .0001));
+	geo.vertices.push(new THREE.Vector3(-2, -.5, .0001));
+
+	geo.colors = [
+		new THREE.Color(0xff0000),
+		new THREE.Color(0x00ff00),
+		new THREE.Color(0x0000ff),
+		new THREE.Color(0xff00ff),
+	];
+
+	sprite.points = new THREE.PointCloud(geo, new THREE.PointCloudMaterial({
+		size: .25,
+		vertexColors: THREE.VertexColors,
+	}));
+	scene.add(sprite.points);
+},
+// Show texture coordinates points
+function() {
+	var geo = new THREE.Geometry();
+	geo.vertices.push(cube.geometry.vertices[5]);
+	geo.vertices.push(cube.geometry.vertices[7]);
+	geo.vertices.push(cube.geometry.vertices[0]);
+	geo.vertices.push(cube.geometry.vertices[2]);
+
+	geo.colors = [
+		new THREE.Color(0xff0000),
+		new THREE.Color(0x00ff00),
+		new THREE.Color(0x0000ff),
+		new THREE.Color(0xff00ff),
+	];
+
+	singlePlane.points = new THREE.PointCloud(geo, new THREE.PointCloudMaterial({
+		size: .25,
+		vertexColors: THREE.VertexColors,
+	}));
+	singlePlane.add(singlePlane.points);
+},
+// Apply texture on plane
+function() {
+	singlePlane.plane.material.map = THREE.ImageUtils.loadTexture('cube.png');
+	singlePlane.plane.material.needsUpdate = true;
+},
+// Rotate plane
+function() {
+	singlePlane.tween = new TWEEN.Tween(singlePlane.rotation)
+		.to({y: Math.PI * 2}, 6000)
+		.repeat(Infinity)
+		.onStop(function() {
+			this.y = 0;
+		})
+		.start();
+},
+// Show cube, no lighting
+function() {
+	singlePlane.tween.stop();
+	singlePlane.remove(singlePlane.points);
+	scene.remove(singlePlane);
+	scene.remove(sprite.points);
+	scene.remove(sprite);
+
+	scene.remove(aLight);
+	aLight = new THREE.AmbientLight(0xffffff);
+	scene.add(aLight);
+	cube.visible = true;
+},
+// Rotate cube
+function() {
+	cube.rotateTween = new TWEEN.Tween(cube.rotation)
+		.to({x: Math.PI * 2, y: Math.PI * 2, z: Math.PI * 2}, 6000)
+		.onStop(function() {
+			cube.rotation.x = 0;
+			cube.rotation.y = 0;
+			cube.rotation.z = 0;
+		})
+		.repeat(Infinity)
+		.start();
+},
+// Enable light
+function() {
+	scene.remove(aLight);
+	aLight = new THREE.AmbientLight(0x202020);
+	scene.add(aLight);
+
+	dLight.visible = true;
+	cube.material.needsUpdate = true;
+},
+];
+
+startFrame();
+</script>
+</body>
+</html>

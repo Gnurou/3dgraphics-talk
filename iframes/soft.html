@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>three.js</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+	<script src="../lib/raphael/raphael-min.js"></script>
+	<script src="state.js"></script>
+</head>
+
+<body>
+
+<script>
+
+var R = Raphael(0, 0, window.innerWidth, window.innerHeight);
+
+textAttrs = {"fill": "#ffffff", "font-size": "28", "font-weight": "bold"};
+
+function TextNode(x, y, w, h, label, color) {
+	var obj = R.set();
+
+	obj.rect = R.rect(x, y, w, h);
+	obj.text = R.text(x + (w / 2), y + (h / 2), label);
+
+	obj.push(obj.rect);
+	obj.push(obj.text);
+
+	obj.rect.attr({"fill": color});
+	obj.text.attr(textAttrs);
+
+	return obj;
+}
+
+initComplete = true;
+
+var areaLength = 800;
+var vSep = 20;
+
+var stateAction = [
+function() {
+	gpu = TextNode((R.width - areaLength) - (vSep * 2), 20, areaLength, 60, "GPU", "#cc3333");
+
+	nouveauDRM = TextNode(gpu.getBBox().x, gpu.getBBox().y2 + vSep, areaLength, 60, "Nouveau DRM", "#33cc33");
+
+	line = R.path([ "M", 20, nouveauDRM.getBBox().y2 + vSep, "L", nouveauDRM.getBBox().x2 + 30, nouveauDRM.getBBox().y2 + vSep ]).attr({"stroke": "#aaaaaa", "stroke-width": 5});
+
+	libDRM = TextNode(nouveauDRM.getBBox().x, line.getBBox().y2 + vSep, areaLength, 60, "libdrm", "#33cc33");
+
+
+
+
+	openGL = TextNode(nouveauDRM.getBBox().x, libDRM.getBBox().y2 + vSep, (areaLength / 4) - vSep, 300, "OpenGL", "#3333cc");
+
+	openCL = TextNode(openGL.getBBox().x2 + vSep, openGL.getBBox().y, (areaLength / 4) - vSep, 300, "OpenCL", "#3333cc");
+
+	vulkan = TextNode(openCL.getBBox().x2 + vSep, openCL.getBBox().y, (areaLength / 4) - vSep, 120, "Vulkan", "#3333cc");
+
+	vulkanApp = TextNode(vulkan.getBBox().x, vulkan.getBBox().y2 + vSep, (areaLength / 4) - vSep, 240, "Vulkan app", "#cc33cc");
+
+	drmApp = TextNode(vulkan.getBBox().x2 + vSep, vulkan.getBBox().y, (areaLength / 4), 60, "libdrm app", "#cc33cc");
+
+	glApp = TextNode(openGL.getBBox().x, openGL.getBBox().y2 + vSep, (areaLength / 4 * 2) - vSep, 60, "GL app", "#cc33cc");
+
+	kLabel = R.text(line.getBBox().x, gpu.getBBox().y2 + (vSep / 2), "Kernel space").attr(textAttrs).attr({'text-anchor': 'start'});
+	uLabel = R.text(line.getBBox().x, libDRM.getBBox().y2 + (vSep / 2), "User space").attr(textAttrs).attr({'text-anchor': 'start'});
+},
+];
+
+function animate(time) {
+	return keepGoing;
+}
+
+startFrame();
+
+</script>
+</body>

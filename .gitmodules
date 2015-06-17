@@ -1,0 +1,15 @@
+[submodule "lib/reveal.js"]
+	path = lib/reveal.js
+	url = https://github.com/hakimel/reveal.js.git
+[submodule "lib/three.js"]
+	path = lib/three.js
+	url = https://github.com/mrdoob/three.js.git
+[submodule "lib/threex.windowresize"]
+	path = lib/threex.windowresize
+	url = https://github.com/jeromeetienne/threex.windowresize.git
+[submodule "lib/tween.js"]
+	path = lib/tween.js
+	url = https://github.com/tweenjs/tween.js.git
+[submodule "lib/raphael"]
+	path = lib/raphael
+	url = https://github.com/DmitryBaranovskiy/raphael.git

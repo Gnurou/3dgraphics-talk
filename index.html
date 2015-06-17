@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+
+	<title>Introduction to GPUs and the Free Software Graphics Stack</title>
+
+	<meta name="description" content="">
+	<meta name="author" content="Alexandre Courbot">
+
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+	<link rel="stylesheet" href="lib/reveal.js/css/reveal.css">
+	<link rel="stylesheet" href="lib/reveal.js/css/theme/black.css" id="theme">
+
+	<!-- Code syntax highlighting -->
+	<link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+	<!-- Printing and PDF exports -->
+	<script>
+		var link = document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = 'text/css';
+		link.href = window.location.search.match(/print-pdf/gi) ? 'lib/reveal.js/css/print/pdf.css' : 'lib/reveal.js/css/print/paper.css';
+		document.getElementsByTagName('head')[0].appendChild( link );
+	</script>
+
+	<!-- Style for presentation elements -->
+	<link rel="stylesheet" href="style.css">
+
+	<script src="lib/reveal.js/lib/js/head.min.js"></script>
+	<script src="lib/reveal.js/js/reveal.js"></script>
+
+	<script>
+	"use strict";
+
+	function getSlideFrame(slide) {
+		var t = slide.getElementsByTagName("iframe")
+
+		if (t.length == 0)
+			return null;
+
+		return t[0].contentWindow;
+	}
+
+	function getCurrentSlideFrame() {
+		return getSlideFrame(Reveal.getCurrentSlide());
+	}
+
+	</script>
+</head>
+
+<body>
+<div class="reveal">
+<div class="slides">
+	<section data-background="nv1.png">
+		<div class="nvlogo"><img src="nvlogobig.png" width="500px"/></div>
+		<h1>Introduction to GPUs</h1>
+		<div class="author">And the Free Software Graphics Stack<br/><p>Alexandre Courbot</p></div>
+	</section>
+
+	<section>
+		<h2>Highlight</h2>
+		<ul>
+		<li>How 3D graphics are rendered</li>
+		<li>How GPUs accelerate 3D rendering</li>
+		<li>How the OSS stack exposes GPUs</li>
+		</ul>
+	</section>
+	<section>
+		<h2>Scope</h2>
+		<ul>
+			<li>Real-time polygon-based rendering</li>
+			<li>3D rendering part of graphics hardware</li>
+			<li>NVIDIA hardware and Nouveau driver used as reference</li>
+		</ul>
+	</section>
+	<section>
+		<h2>Limits of this Talk</h2>
+		<p>An <i>overview</i> of how 3D graphics are rendered and accelerated</p>
+		<ul>
+			<li>Basic idea of 3D rendering and GPUs design</li>
+			<li>Many details will be omitted</li>
+			<li>Simplicity over accuracy</li>
+		</ul>
+	</section>
+	<section>
+		<h2>3D Rendering</h2>
+	</section>
+	<section>
+		<div class="leftcol">
+
+		<div class="initHidden pointVisible">
+		<math>
+		<mrow>
+		<mi>P</mi>
+		<mo>=</mo>
+		<mfenced open="[" close="]">
+		<mtable id="pointCoords">
+		<mtr>
+			<mtd><mi>x</mi></mtd>
+		</mtr>
+		<mtr>
+			<mtd><mi>y</mi></mtd>
+		</mtr>
+		<mtr>
+			<mtd><mi>z</mi></mtd>
+		</mtr>
+		<mtr class="initHidden point4th">
+			<mtd><mi>1</mi></mtd>
+		</mtr>
+		</mtable>
+		</mfenced>
+		</mrow>
+		</math>
+		</div>
+
+
+		<div class="initHidden matrixMul">
+		<p class="initHidden matIdentity">Identity matrix:<p>
+		<p class="initHidden matTranslate">Translation:<p>
+		<p class="initHidden matRotate">Rotation:<p>
+		<p class="initHidden matScale">Scaling:<p>
+		<p class="initHidden matCombi">Combination:<p>
+		<div class="center">
+		<math>
+		<mrow>
+		<mi>M</mi>
+		<mo>=</mo>
+		<mfenced open="[" close="]">
+		<mtable id="matrixTable">
+		<mtr>
+			<mtd class="rotation scaling"><mi></mi></mtd>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="translation"><mi></mi></mtd>
+		</mtr>
+		<mtr>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="rotation scaling"><mi></mi></mtd>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="translation"><mi></mi></mtd>
+		</mtr>
+		<mtr>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="rotation"><mi></mi></mtd>
+			<mtd class="rotation scaling"><mi></mi></mtd>
+			<mtd class="translation"><mi></mi></mtd>
+		</mtr>
+		<mtr>
+			<mtd class=""><mi></mi></mtd>
+			<mtd class=""><mi></mi></mtd>
+			<mtd class=""><mi></mi></mtd>
+			<mtd class=""><mi></mi></mtd>
+		</mtr>
+		</mtable>
+		</mfenced>
+		</mrow>
+		</math>
+		</div>
+		</div>
+
+		<div class="initHidden displayEquation">
+		<math style="font-size: 200%">
+		<mfrac>
+			<mrow>
+				<mi mathcolor='#ff00ff'>dy</mi>
+			</mrow>
+			<mrow>
+				<mi mathcolor='#0000ff'>y</mi>
+			</mrow>
+		</mfrac>
+		<mo>=</mo>
+		<mfrac>
+			<mrow>
+				<mi mathcolor='#ff0000'>dz</mi>
+			</mrow>
+			<mrow>
+				<mi mathcolor='#ff0000'>dz</mi><mo>+</mo><mi mathcolor='#00ff00'>z</mi>
+			</mrow>
+		</mfrac>
+		</math>
+		</div>
+
+		<div class="initHidden displayEquation2">
+		<math style="font-size: 200%">
+		<mi mathcolor='#ff00ff'>dy</mi>
+		<mo>=</mo>
+		<mfrac>
+			<mrow>
+				<mi mathcolor='#0000ff'>y</mi><mo>&times;</mo><mi mathcolor='#ff0000'>dz</mi>
+			</mrow>
+			<mrow>
+				<mi mathcolor='#ff0000'>dz</mi><mo>+</mo><mi mathcolor='#00ff00'>z</mi>
+			</mrow>
+		</mfrac>
+		</math>
+		</div>
+
+		</div>
+		<div>
+			<iframe data-src="iframes/3dobjects.html" width="1280" height="900" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+		</div>
+		<script>
+		document.currentScript.parentNode.init = function() {
+			var frame = getCurrentSlideFrame();
+			var matrixDOM = document.getElementById("matrixTable");
+			var pointDOM = document.getElementById("pointCoords");
+			var matrix = frame.ico.matrix;
+			var point = frame.point1;
+
+			function updatePoint() {
+				pointDOM.children[0].children[0].children[0].innerHTML = point.position.x.toFixed(2);
+				pointDOM.children[1].children[0].innerHTML = point.position.y.toFixed(2);
+				pointDOM.children[2].children[0].innerHTML = point.position.z.toFixed(2);
+			}
+
+			function updateMatrix() {
+				for (var j = 0; j < 4; j++)
+					for (var i = 0; i < 4; i++)
+						matrixDOM.children[i].children[j].innerHTML = matrix.elements[j * 4 + i].toFixed(1);
+			}
+
+			function animate(time) {
+				if (frame.animate() == false)
+					return;
+				updatePoint();
+				updateMatrix();
+				requestAnimationFrame(animate);
+			}
+
+			updatePoint();
+			updateMatrix();
+
+			requestAnimationFrame(animate);
+		}
+		document.currentScript.parentNode.onStateChange = function(enable, disable) {
+			var matrixDOM = document.getElementById("matrixTable");
+			var els;
+
+			if (enable.indexOf("matTranslate") != -1) {
+				els = matrixDOM.getElementsByClassName("translation");
+				for (var i = 0; i < els.length; i++)
+					addClass(els[i], "highlight");
+			} else if (disable.indexOf("matTranslate") != -1) {
+				els = matrixDOM.getElementsByClassName("translation");
+				for (var i = 0; i < els.length; i++)
+					removeClass(els[i], "highlight");
+			}
+
+			if (enable.indexOf("matRotate") != -1) {
+				els = matrixDOM.getElementsByClassName("rotation");
+				for (var i = 0; i < els.length; i++)
+					addClass(els[i], "highlight");
+			} else if (disable.indexOf("matRotate") != -1) {
+				els = matrixDOM.getElementsByClassName("rotation");
+				for (var i = 0; i < els.length; i++)
+					removeClass(els[i], "highlight");
+			}
+
+			if (enable.indexOf("matScale") != -1) {
+				els = matrixDOM.getElementsByClassName("scaling");
+				for (var i = 0; i < els.length; i++)
+					addClass(els[i], "highlight");
+			} else if (disable.indexOf("matScale") != -1) {
+				els = matrixDOM.getElementsByClassName("scaling");
+				for (var i = 0; i < els.length; i++)
+					removeClass(els[i], "highlight");
+			}
+		}
+		</script>
+	</section>
+
+	<section>
+		<iframe data-src="lib/three.js/examples/webgl_loader_assimp2json.html" width="1000" height="700" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+	</section>
+
+	<section>
+		<h2>Omissions</h2>
+		<ul>
+		<li>Local, world, camera coordinates</li>
+		<li>Culling</li>
+		<li>Clipping</li>
+		<li>Tessellation</li>
+		<li>Modern lighting techniques</li>
+		<li>Perspective correction</li>
+		<li>Projection matrix</li>
+		<li>Skeletal animation</li>
+		<li>Z-buffer</li>
+		<li>Stencil buffer</li>
+		<li>Texture perspective correction</li>
+		<li>Texture filtering</li>
+		<li>Transparency</li>
+		<li>Shadows</li>
+		<li>Bump mapping</li>
+		<li>Multi-pass rendering</li>
+		<li>Tiled rendering</li>
+		<li>&hellip;</li>
+		</ul>
+	</section>
+	<section>
+		<h2>Simplified 3D Rendering Pipeline</h2>
+	</section>
+	<section>
+		<p class="nomargin">3D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Transform</th>
+			<th style="text-align:center;">Lighting</th>
+			<th style="text-align:center;">Project</th>
+		<th></th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="translation.png" width='180px'/></td>
+			<td><img src="lighting.png" width='180px'/></td>
+			<td><img src="projection.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<p>2D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Raster</th>
+
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="raster.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Fragment Shading</th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
+		</tr>
+		</table>
+	</section>
+
+	<section>
+		<h2>Operations Involved in the 3D Pipeline</h2>
+
+		<dl>
+		<dt>Transform, Lighting, Project:</dt>
+		<dd>Matrix &amp; floating point operations</dd>
+		<dt>Raster, fragment shading:</dt>
+		<dd>Interpolation, memory accesses</dd>
+		</dl>
+
+		<p>The CPU can perform these operations, but:</p>
+		<ul>
+		<li>No or few parallelization</li>
+		<li>CPUs were weak at floating-point operations</li>
+		<li>Rendering is only part of the CPU workload!</li>
+		</ul>
+	</section>
+
+	<!--
+	<section>
+	<iframe width="853" height="480" data-src="https://www.youtube.com/embed/-P28LKWTzrI?autoplay=1&start=17&end=27&controls=0" frameborder="0"></iframe>
+	</section>
+	-->
+
+	<section>
+		<h2>Hardware Acceleration of 3D Rendering</h2>
+	</section>
+
+	<section>
+		<h2>From 2D to 3D Accelerators</h2>
+
+		<iframe data-src="iframes/2dgfx.html" width="1000" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+
+		<script>
+		document.currentScript.parentNode.init = function() {
+			var frame = getCurrentSlideFrame();
+
+			function animate(time) {
+				if (frame.animate() == false)
+					return;
+				requestAnimationFrame(animate);
+			}
+
+			requestAnimationFrame(animate);
+		}
+		</script>
+
+	<div class="initHidden 1stGen">
+	First generations of 3D accelerators (1996)
+	</div>
+
+	</section>
+
+	<section>
+	<img src="glquake.jpg" width=1280/>
+	</section>
+
+	<section>
+	<h2>Omissions (again...)</h2>
+	<ul>
+	<li>Perspective correction</li>
+	<li>Lighting</li>
+	<li>Face color</li>
+	<li>Transparency</li>
+	<li>Antialiasing</li>
+	<li>Fog</li>
+	<li>&hellip;</li>
+	</ul>
+	</section>
+
+	<section>
+		<p class="nomargin">3D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Transform</th>
+			<th style="text-align:center;">Lighting</th>
+			<th style="text-align:center;">Project</th>
+		<th></th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="translation.png" width='180px'/></td>
+			<td><img src="lighting.png" width='180px'/></td>
+			<td><img src="projection.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<p>2D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Raster</th>
+
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="raster.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Fragment Shading</th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		<div class="rastercol">
+		Hardware Accelerated
+		</div>
+	</section>
+
+	<section>
+	<h2>Acceleration of Geometry Processing</h2>
+	Dedicated parallel units that accelerate geometry and lighting processing.
+	<p>GeForce256: <i>"The world first Graphics Processing Unit"</i> (1999)</p>
+	</section>
+
+	<section>
+		<p class="nomargin">3D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Transform</th>
+			<th style="text-align:center;">Lighting</th>
+			<th style="text-align:center;">Project</th>
+		<th></th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="translation.png" width='180px'/></td>
+			<td><img src="lighting.png" width='180px'/></td>
+			<td><img src="projection.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<p>2D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Raster</th>
+
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="raster.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Fragment Shading</th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		<div class="rastercol">
+		Hardware Accelerated
+		</div>
+		<div class="geocol">
+		Hardware Accelerated
+		</div>
+	</section>
+
+	<section>
+	<h2>Limitations of Second-Generation GPUs</h2>
+	<p>&nbsp;</p>
+	<h4>Accelerators that perform two very different things:</h4>
+	<ol>
+	<li>Fast, parallel floating-point operations</li>
+	<li>Fast parameterized texture mapping</li>
+	</ol>
+	<p>Extreme workloads result in sub-optimal silicon usage</p>
+	<p>&nbsp;</p>
+	<h4>Fixed Pipeline</h4>
+	<ul>
+	<li>Lighting limited to a few models</li>
+	<li>Fragment shading limited to color + light + texture + ...</li>
+	<li>More complex shading needs to be delegated to the CPU!</li>
+	</ul>
+	</section>
+
+	<section>
+	<h2>Programmable Pipeline (2001)</h2>
+	<p>Both vertex and fragment processing units become capable of running user-defined parallel programs (<i>shaders</i>)</p>
+	</section>
+
+		<section>
+		<p>3D Geometry</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Transform</th>
+			<th style="text-align:center;">Lighting</th>
+			<th style="text-align:center;">Project</th>
+		<th></th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="translation.png" width='180px'/></td>
+			<td><img src="lighting.png" width='180px'/></td>
+			<td><img src="projection.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<p>2D Geometry + Attributes</p>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Raster</th>
+
+		</tr>
+		<tr style='text-align: center;'>
+			<td><img src="raster.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		&#8595;
+
+		<table>
+		<tr>
+			<th style="text-align:center;">Fragment Shading</th>
+		</tr>
+		<tr style='text-align: center;'>
+			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
+		</tr>
+		</table>
+
+		<div class="vshadercol">
+		&#8592; Vertex shader
+		</div>
+
+		<div class="pshadercol">
+		&#8592; Fragment shader
+		</div>
+	</section>
+
+	<section>
+		<h2>Fixed Pipeline</h2>
+		<iframe data-src="lib/three.js/examples/webgl_materials_texture_anisotropy.html" width="1000" height="700" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+	</section>
+
+	<section>
+		<h2>Programmable Pipeline</h2>
+		<iframe data-src="lib/three.js/examples/webgl_shaders_ocean.html" width="1000" height="700" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+	</section>
+
+	<!--
+	<section>
+		<h2>Programmable Pipeline</h2>
+		<iframe data-src="three.js/examples/webgl_materials_cars.html" width="1000" height="700" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+	</section>
+	-->
+
+	<section>
+	<h2>Limitations of Second-Generation GPUs</h2>
+	<p>&nbsp;</p>
+	<h4>Accelerators that perform two very different things:</h4>
+	<ol>
+	<li>Fast, parallel floating-point operations</li>
+	<li>Fast parameterized texture mapping</li>
+	</ol>
+	<p>Extreme workloads result in sub-optimal silicon usage</p>
+	<p>&nbsp;</p>
+	<del>
+	<h4>Fixed Pipeline</h4>
+	</del>
+	<ul>
+	<li><del>Lighting limited to a few models</del></li>
+	<li><del>Fragment shading limited to color + light + texture + fog + ...</del></li>
+	<li><del>More complex shading needs delegation to the CPU!</del></li>
+	</ul>
+	</section>
+
+	<section>
+	<h2>Unified Shaders (2006)</h2>
+	<ul>
+	<li>Units responsible for vertex and fragment shading merged</li>
+	<li>The 3D pipeline becomes a <i>logical</i> pipeline</li>
+	<li>Better use of silicon during extreme workloads</li>
+	<li>GPU becomes General-Purpose: CUDA, OpenCL</li>
+	</ul>
+	</section>
+
+	<section>
+	<img src="maxwell.png" height="900px"/>
+	<p>Geforce GTX 980: 2048 CUDA cores</p>
+	</section>
+
+	<section>
+	<h2>Virtualization of GPU hardware</h2>
+	<p>GPU contexts provided by <i>channels</i></p>
+	<ul>
+		<li>Virtual memory address space</li>
+		<li>Engines states</li>
+		<li>Hardware scheduler</li>
+		<li>Pushbuffer specifies sequence of values to write into GPU registers</li>
+		<li>Programming the GPU becomes invoking "methods" on "objects" (no kidding!)</li>
+	</ul>
+	</section>
+
+	<section>
+	<h2>Software Side</h2>
+	</section>
+
+	<section>
+	<iframe data-src="iframes/soft.html" width="1200" height="670" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+	</section>
+
+	<section>
+	<h2>libdrm app example</h2>
+	Use the 2D engine to render a green rectangle on the framebuffer from (100, 100) to (150, 150)
+	</section>
+
+	<section>
+	<h2>Open device</h2>
+	<pre><code class="c">
+	fd = open("/dev/dri/renderD128", O_RDWR | O_CLOEXEC);
+	nouveau_device_wrap(fd, 0, &device);
+	nouveau_client_new(device, &client);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Allocate framebuffer</h2>
+	<pre><code class="c">
+	nouveau_bo_new(device, NOUVEAU_BO_VRAM, 4096,
+		       width * 4 * height, NULL, &fb);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Allocate channel</h2>
+	<pre><code class="c">
+	nouveau_object_new(&device->object, 0, NOUVEAU_FIFO_CHANNEL_CLASS,
+			   &data, size, &channel);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Allocate 2D object</h2>
+	<pre><code class="c">
+	nouveau_object_new(channel, 0xbeef902d, NVC0_2D_CLASS, NULL, 0, &twod);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Allocate pushbuffer</h2>
+	<pre><code class="c">
+	nouveau_pushbuf_new(client, channel, 2, 4096, true, &pushbuf);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Set object</h2>
+	<pre><code class="c">
+	BEGIN_INCR(pushbuf, 1, SET_OBJECT);
+	DATA(pushbuf, twod->oclass);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Set destination properties</h2>
+	<pre><code class="c">
+	BEGIN_INCR(pushbuf, 5, DST_PITCH);
+	DATA(pushbuf, 4 * width);            /* DST_PITCH */
+	DATA(pushbuf, width);                /* DST_WIDTH */
+	DATA(pushbuf, height);               /* DST_HEIGHT */
+	DATA(pushbuf, fb->offset >> 32);     /* DST_OFFSETUPPER */
+	DATA(pushbuf, (uint32_t)fb->offset); /* DST_OFFSETLOWER */
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Set operation</h2>
+	<pre><code class="c">
+	BEGIN_INCR(pushbuf, 3, RENDER_SOLID_PRIM_MODE);
+	DATA(pushbuf, 0x4);          /* Rectangle */
+	DATA(pushbuf, 0xd5);         /* COLOR_FORMAT (A8B8G8R8) */
+	DATA(pushbuf, 0x0000ff00);   /* COLOR */
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Set draw coordinates</h2>
+	<pre><code class="c">
+	BEGIN_NONINCR(pushbuf, 2, RENDER_SOLID_PRIM_POINTXY);
+	DATA(pushbuf, 100 | (100 << 16));    /* x | (y << 16) */
+	DATA(pushbuf, 150 | (150 << 16));    /* x | (y << 16) */
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Kick the pushbuffer</h2>
+	<pre><code class="c">
+	nouveau_pushbuf_kick(pushbuf, pushbuf->channel);
+	</code></pre>
+	</section>
+
+	<section>
+	<h2>Result:</h2>
+	<iframe data-src="iframes/2drender.html" width="1000" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:3px solid #666; margin-bottom:5px; max-width: 100%;"></iframe>
+	</section>
+
+	<section>
+	<h2>Omissions</h2>
+	<ul>
+	<li>List of buffers used by graphics job</li>
+	<li>Synchronization</li>
+	<li>3D workloads involve more buffers (compiled shaders, ...) and more complex pushbuffers</li>
+	</ul>
+	</section>
+
+	<section>
+	<p>More complex libraries like OpenGL build on this simple interface</p>
+	<ul>
+	<li>Complete API implementation</li>
+	<li>State tracking</li>
+	<li>Shaders compilers</li>
+	<li>&hellip;</li>
+	</ul>
+	</section>
+
+	<section>
+	<h2>Resources</h2>
+	<dl>
+		<dt>A Trip Through the Graphics Pipeline</dt>
+		<dd><a href="https://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/">https://fgiesen.wordpress.com/2011/07/09/a-trip-through-the-graphics-pipeline-2011-index/</a></dd>
+		<dt>Life of a Triangle</dt>
+		<dd><a href="https://developer.nvidia.com/content/life-triangle-nvidias-logical-pipeline">https://developer.nvidia.com/content/life-triangle-nvidias-logical-pipeline</a></dd>
+		<dt>The Nouveau Project</dt>
+		<dd><a href="http://nouveau.freedesktop.org/">http://nouveau.freedesktop.org/</a></dd>
+	</dl>
+	</section>
+</div>
+</div>
+
+<script>
+	// Full list of configuration options available at:
+	// https://github.com/hakimel/reveal.js#configuration
+	Reveal.initialize({
+		width: 1280,
+		height: 1024,
+		controls: false,
+		progress: true,
+		history: true,
+		center: true,
+		viewDistance: 2,
+
+		transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+		// Optional reveal.js plugins
+		dependencies: [
+			{ src: 'lib/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+			{ src: 'lib/reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+			{ src: 'lib/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+			{ src: 'lib/reveal.js/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+			{ src: 'lib/reveal.js/plugin/zoom-js/zoom.js', async: true },
+			{ src: 'lib/reveal.js/plugin/notes/notes.js', async: true }
+		]
+	});
+
+	function addClass(element, classToAdd) {
+		var currentClassValue = element.className;
+
+		if (currentClassValue.indexOf(classToAdd) == -1) {
+			if ((currentClassValue == null) || (currentClassValue === "")) {
+				element.className = classToAdd;
+			} else {
+				element.className += " " + classToAdd;
+			}
+		}
+	}
+
+	function removeClass(element, classToRemove) {
+		var currentClassValue = element.className;
+
+		if (currentClassValue == classToRemove) {
+			element.className = "";
+			return;
+		}
+
+		var classValues = currentClassValue.split(" ");
+		var filteredList = [];
+
+		for (var i = 0 ; i < classValues.length; i++) {
+			if (classToRemove != classValues[i]) {
+				filteredList.push(classValues[i]);
+			}
+		}
+
+		element.className = filteredList.join(" ");
+	}
+
+	function processStates(slide, ns) {
+		var enable = ns[0].split(" ");
+		var disable = ns[1].split(" ");
+
+		for (var j = 0; j < disable.length; j++) {
+			var els = slide.getElementsByClassName(disable[j]);
+			for (var i = 0; i < els.length; i++)
+				addClass(els[i], "stateHidden");
+		}
+
+		for (var j = 0; j < enable.length; j++) {
+			els = slide.getElementsByClassName(enable[j]);
+			for (var i = 0; i < els.length; i++)
+				removeClass(els[i], "stateHidden");
+		}
+
+		if (slide.onStateChange)
+			slide.onStateChange(enable, disable);
+
+		//console.log(ns);
+	}
+
+	function nextFrameState() {
+		var slide = Reveal.getCurrentSlide();
+		var frame = getCurrentSlideFrame();
+
+		if (!frame || !frame.nextState) {
+			Reveal.next();
+			return;
+		}
+
+		var ns = frame.nextState();
+
+		if (ns === undefined) {
+			Reveal.next();
+			return;
+		}
+
+		processStates(slide, ns);
+	}
+
+	Reveal.configure({
+		keyboard: {
+			13: nextFrameState,
+			39: nextFrameState,
+		},
+	});
+
+	function checkFrame(currentSlide) {
+		var curFrame = getSlideFrame(currentSlide);
+
+		if (curFrame) {
+			if (!curFrame.scriptReady) {
+				setTimeout(function() {
+					checkFrame(currentSlide);
+				}, 50);
+				return;
+			}
+
+			if (curFrame.initFrame) {
+				var ns = curFrame.initFrame();
+
+				if (ns != undefined)
+					processStates(currentSlide, ns);
+			}
+
+			while (!curFrame.initComplete) {
+				nextFrameState();
+			}
+		}
+
+		if (currentSlide.init)
+			currentSlide.init();
+	}
+
+	function checkSlide(currentSlide) {
+		var els = currentSlide.getElementsByClassName("initHidden");
+			for (var i = 0; i < els.length; i++)
+				addClass(els[i], "stateHidden");
+
+		checkFrame(currentSlide);
+	}
+
+	Reveal.addEventListener('slidechanged', function(event) {
+		var prevFrame = getSlideFrame(event.previousSlide);
+
+		if (event.previousSlide.fini)
+			event.previousSlide.fini();
+		if (prevFrame && prevFrame.finiFrame)
+			prevFrame.finiFrame();
+
+		checkSlide(event.currentSlide);
+	}, false);
+
+	// If we are loading the presentation on a given slide, give some time
+	// for the iframe to load, if any, and initialize it.
+	Reveal.addEventListener('ready', function(event) {
+		checkSlide(Reveal.getCurrentSlide());
+	});
+</script>
+
+</body>
+</html>

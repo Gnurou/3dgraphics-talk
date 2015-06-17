@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>three.js</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+	<script src="../lib/raphael/raphael-min.js"></script>
+	<script src="state.js"></script>
+
+</head>
+
+<body>
+
+<script>
+
+var R = Raphael(0, 0, window.innerWidth, window.innerHeight);
+
+function TextNode(x, y, w, h, label) {
+	var obj = R.set();
+
+	obj.rect = R.rect(x, y, w, h);
+	obj.text = R.text(x + (w / 2), y + (h / 2), "");
+
+	obj.label = R.text(x - 10, y + (h / 2), label);
+	obj.label.attr({'text-anchor': 'end'});
+
+	obj.push(obj.rect);
+	obj.push(obj.text);
+	obj.push(obj.label);
+
+	obj.attr({"font-size": "30px", "font-weight": "bold"});
+	obj.rect.attr({"fill": "#ffffff"});
+	obj.label.attr({"fill": "#aaaaaa"});
+
+	return obj;
+}
+
+function GpuRegs(x, y, w, h, regs) {
+	var obj = R.set();
+
+	obj.regs = {};
+
+	for (var i = 0; i < regs.length; i++) {
+		obj.regs[regs[i]] = i;
+		var t = TextNode(x, y + (h * i), w, h, regs[i]);
+		obj.push(t);
+	}
+
+	obj.set = function(reg, value, col) {
+		this[obj.regs[reg]].text.attr({"text": value});
+		if (col) {
+			this[obj.regs[reg]].rect.attr({"fill": col});
+		}
+	};
+
+	return obj;
+}
+
+function PCircle(ref, x, y, col) {
+	var obj = R.circle(ref.attrs.x + x, ref.attrs.y + y, 8);
+	obj.attr({'fill': col});
+
+	return obj;
+}
+
+initComplete = true;
+
+var regsLength = 200;
+
+var stateAction = [
+function() {
+	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+		[
+		"OP",
+		"COLOR",
+		"SRCPOS",
+		"SRCSIZE",
+		"DSTPOS",
+		"DSTSIZE",
+		]);
+},
+function() {
+	var frameBufferWidth = 400 * 1.5;
+	var frameBufferHeight = 300 * 1.5;
+	framebuffer = R.rect(20, R.height - (frameBufferHeight + 20), frameBufferWidth, frameBufferHeight);
+	framebuffer.attr({'fill': "#000000", 'stroke': "#ffffff"});
+},
+function() {
+	regs.set("OP", "RECT");
+},
+function() {
+	regs.set("COLOR", "0x00ff00");
+},
+function() {
+	regs.set("SRCSIZE", "(50, 50)");
+},
+function() {
+	regs.set("DSTSIZE", "(400, 300)");
+},
+function() {
+	regs.set("DSTPOS", "(30, 30)");
+},
+function() {
+	framebuffer.rect = R.rect(framebuffer.attrs.x + 30 * 1.5, framebuffer.attrs.y + 30 * 1.5, 50 * 1.5, 50 * 1.5);
+	framebuffer.rect.attr({"fill": "#00ff00"});
+},
+function() {
+	regs.remove();
+	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+		[
+		"OP",
+		"COLOR",
+		"SRCPOS",
+		"SRCSIZE",
+		"DSTPOS",
+		"DSTSIZE",
+		]);
+
+	pixmap = R.image('cube.png', 20 * 1.5, 20 * 1.5, 100 * 1.5, 100 * 1.5);
+},
+function() {
+	regs.set("OP", "BLIT");
+},
+function() {
+	regs.set("SRCSIZE", "(100, 100)");
+},
+function() {
+	regs.set("SRCPOS", "(0, 0)");
+},
+function() {
+	regs.set("DSTSIZE", "(400, 300)");
+},
+function() {
+	regs.set("DSTPOS", "(150, 150)");
+},
+function() {
+	framebuffer.pixmap = R.image('cube.png', framebuffer.attrs.x + 150 * 1.5, framebuffer.attrs.y + 150 * 1.5, 100 * 1.5, 100 * 1.5);
+},
+function() {
+	framebuffer.pixmap.remove();
+	framebuffer.rect.remove();
+
+	regs.remove();
+
+	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+		[
+		"OP",
+		"SRC1",
+		"SRC2",
+		"SRC3",
+		"SRCSIZE",
+		"DST1",
+		"DST2",
+		"DST3",
+		"DSTSIZE",
+		]);
+},
+function() {
+	regs.set("OP", "TRI");
+},
+function() {
+	regs.set("SRCSIZE", "(100, 100)");
+},
+function() {
+	regs.set("SRC1", "(0, 0)", "#ff0000");
+	pixmap.p1 = PCircle(pixmap, 0, 0, "#ff0000");
+},
+function() {
+	regs.set("SRC2", "(100, 0)", "#00ff00");
+	pixmap.p2 = PCircle(pixmap, 150, 0, "#00ff00");
+},
+function() {
+	regs.set("SRC3", "(0, 100)", "#0000ff");
+	pixmap.p3 = PCircle(pixmap, 0, 150, "#0000ff");
+},
+function() {
+	regs.set("DSTSIZE", "(400, 300)");
+},
+function() {
+	regs.set("DST1", "(80, 90)", "#ffff00");
+	framebuffer.p1 = PCircle(framebuffer, 80 * 1.5, 100 * 1.5, "#ffff00");
+},
+function() {
+	regs.set("DST2", "(180, 80)", "#ff00ff");
+	framebuffer.p2 = PCircle(framebuffer, 180 * 1.5, 80 * 1.5, "#ff00ff");
+},
+function() {
+	regs.set("DST3", "(80, 160)", "#00ffff");
+	framebuffer.p3 = PCircle(framebuffer, 80 * 1.5, 160 * 1.5, "#00ffff");
+},
+function() {
+	framebuffer.triangle =
+	framebuffer.cube1 = R.image('cubeperspective1.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
+},
+function() {
+	pixmap.p1.remove();
+	pixmap.p2.remove();
+	pixmap.p3.remove();
+	framebuffer.p1.remove();
+	framebuffer.p2.remove();
+	framebuffer.p3.remove();
+
+	regs.set("SRC1", "(0, 100)", "#ff0000");
+	pixmap.p1 = PCircle(pixmap, 0, 100 * 1.5, "#ff0000");
+	regs.set("SRC2", "(100, 0)", "#00ff00");
+	pixmap.p2 = PCircle(pixmap, 100 * 1.5, 0, "#00ff00");
+	regs.set("SRC3", "(100, 100)", "#0000ff");
+	pixmap.p3 = PCircle(pixmap, 100 * 1.5, 100 * 1.5, "#0000ff");
+
+	regs.set("DST1", "(80, 160)", "#ffff00");
+	framebuffer.p1 = PCircle(framebuffer, 80 * 1.5, 160 * 1.5, "#ffff00");
+	regs.set("DST2", "(180, 80)", "#ff00ff");
+	framebuffer.p2 = PCircle(framebuffer, 180 * 1.5, 80 * 1.5, "#ff00ff");
+	regs.set("DST3", "(180, 180)", "#00ffff");
+	framebuffer.p3 = PCircle(framebuffer, 180 * 1.5, 180 * 1.5, "#00ffff");
+
+	framebuffer.cube2 = R.image('cubeperspective2.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
+},
+function() {
+	return ["1stGen", ""];
+},
+];
+
+function animate(time) {
+	return keepGoing;
+}
+
+startFrame();
+
+//var text = new textNode(50, 50, 50, 20, "Tralala");
+//text.text.attr({text: "Foo"});
+// Sets the fill attribute of the circle to red (#f00)
+//circle.attr("fill", "#f00");
+// Sets the stroke attribute of the circle to white
+//circle.attr("stroke", "#fff");
+</script>
+</body>

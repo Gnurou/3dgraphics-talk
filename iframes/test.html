@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>three.js</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+
+	<script src="../js/tween.min.js"></script>
+	<script src="../js/three.min.js"></script>
+	<script src="../js/THREEx.WindowResize.js"></script>
+	<script src="state.js"></script>
+
+</head>
+
+<body onkeyup="onKeyEvent(event)">
+	<script>
+	renderer = new THREE.WebGLRenderer({antialias:true});
+	renderer.setClearColor(0x000000, 1);
+	renderer.setSize(window.innerWidth, window.innerHeight);
+
+	document.body.appendChild(renderer.domElement);
+
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+	camera.position.set(0, 0, 10);
+	camera.lookAt(scene.position);
+	scene.add(camera);
+
+	THREEx.WindowResize(renderer, camera)
+
+	var axisHelper = new THREE.AxisHelper(3);
+	scene.add(axisHelper);
+
+	var isoGeo = new THREE.IcosahedronGeometry();
+	//isoGeo.vertices = isoGeo.vertices.slice(0, 3);
+	//console.log(isoGeo.vertices);
+	var isoMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
+	var iso = new THREE.Mesh(isoGeo, isoMat);
+	scene.add(iso);
+	//console.log(iso);
+	iso.geometry.faces = iso.geometry.faces.slice(0, 1);
+
+	var pointGeometry = new THREE.BufferGeometry();
+	pointGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+		 0.0,  1.0,  0.0,
+		-1.0, -1.0, -1.0,
+		-1.0, -1.0,  1.0,
+		 1.0, -1.0, -1.0,
+		 1.0, -1.0,  1.0,
+	]), 3));
+	var pointMaterial = new THREE.PointCloudMaterial({
+		color: 0xffffff,
+		size: 0.1,
+	});
+	var point = new THREE.PointCloud(pointGeometry, pointMaterial);
+
+	/*
+	var lineGeometry = new THREE.BufferGeometry();
+	lineGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+		 0.0,  1.0,  0.0,
+		-1.0, -1.0, -1.0,
+		-1.0, -1.0,  1.0,
+		 0.0,  1.0,  0.0,
+		-1.0, -1.0,  1.0,
+		 1.0, -1.0,  1.0,
+		 0.0,  1.0,  0.0,
+		 1.0, -1.0,  1.0,
+		 1.0, -1.0, -1.0,
+		 0.0,  1.0,  0.0,
+		 1.0, -1.0, -1.0,
+		-1.0, -1.0, -1.0,
+	]), 3));
+	var lineMaterial = new THREE.LineBasicMaterial({
+		color: 0xffffff
+	});
+	var line = new THREE.Line(lineGeometry, lineMaterial);
+	*/
+
+	var triGeometry = new THREE.BufferGeometry();
+	triGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array([
+		 0.0,  1.0,  0.0,
+		-1.0, -1.0, -1.0,
+		-1.0, -1.0,  1.0,
+		 1.0, -1.0, -1.0,
+		 1.0, -1.0,  1.0,
+	]), 3));
+	triGeometry.addAttribute('index', new THREE.BufferAttribute(new Uint32Array([
+		0, 1, 2,
+		0, 2, 4,
+		0, 4, 3,
+		0, 3, 1,
+	]), 3));
+	var triMaterial = new THREE.MeshBasicMaterial({
+		color:0x777777,
+		transparent:true,
+	});
+	var tri = new THREE.Mesh(triGeometry, triMaterial);
+
+	// Scale line and point slightly so they are always visible
+	//line.scale.x = line.scale.y = line.scale.z = 1.001;
+	point.scale.x = point.scale.y = point.scale.z = 1.001;
+
+	group = new THREE.Object3D();
+	group.add(tri);
+	//group.add(line);
+	group.add(point);
+	group.position.set(0.0, 0.0, 4.0);
+	scene.add(group);
+
+	var tween = new TWEEN.Tween(group.rotation)
+		.to({ y: 3.14 * 2 }, 4000)
+		.repeat(Infinity);
+
+	var otween = new TWEEN.Tween(triMaterial)
+		.to({opacity: 1.0}, 2000);
+
+	var cameratween = new TWEEN.Tween(camera.position)
+		.to({ x: 1.5 }, 2000)
+		.easing(TWEEN.Easing.Elastic.InOut)
+		.chain(new TWEEN.Tween(camera.position)
+			.to({ x: -1.5 }, 2000)
+			.repeat(Infinity)
+			.yoyo(true)
+			.easing(TWEEN.Easing.Elastic.InOut))
+		.delay(1000);
+
+
+
+
+	function animate(time)
+	{
+		TWEEN.update();
+		renderer.render(scene, camera);
+
+		return keepGoing;
+	}
+
+	function stop()
+	{
+		otween.stop();
+		cameratween.stop();
+		tween.stop();
+	}
+
+	var stateAction = [
+	function() {
+		group.rotation.y = 0.0;
+		triMaterial.opacity = 0.0;
+		camera.position.x = 0.0;
+		tween.start();
+		cameratween.start();
+	},
+	function() {
+		otween.start();
+	},
+	];
+
+	startFrame();
+	</script>
+</body>
+</html>

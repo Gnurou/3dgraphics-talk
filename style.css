@@ -1,0 +1,120 @@
+mtd {
+	width: 2em;
+	text-align: center;
+}
+
+math {
+	font-size: 80%;
+}
+
+.leftcol {
+	text-align: left;
+	position:absolute;
+	top:50px;
+	left:75px;
+	width: 500px;
+}
+
+.stateHidden {
+	display: none;
+}
+
+.highlight {
+	background-color: #ff0000;
+}
+
+.reveal table th, .reveal table td {
+  padding: 0em 0.5em 0em 0.5em;
+}
+
+.reveal p {
+}
+
+.rastercol {
+	position:absolute;
+	top:490px;
+	left:460px;
+	width:360px;
+	height: 560px;
+	background-color: rgba(0, 128, 0, 0.4);
+	color: #ff0000;
+	text-shadow: 5px 5px #000000;
+}
+
+.geocol {
+	position:absolute;
+	top:110px;
+	left:220px;
+	width:850px;
+	height: 270px;
+	background-color: rgba(0, 128, 0, 0.4);
+	color: #ff0000;
+	text-shadow: 5px 5px #000000;
+}
+
+.vshadercol {
+	position:absolute;
+	top:270px;
+	left:980px;
+	width:280px;
+	height: 1.2em;
+	background-color: rgba(0, 128, 0, 0.4);
+	color: #ff0000;
+}
+
+.pshadercol {
+	position:absolute;
+	top:930px;
+	left:750px;
+	width:320px;
+	height: 1.2em;
+	background-color: rgba(0, 128, 0, 0.4);
+	color: #ff0000;
+}
+
+.reveal h1 {
+	color: #74b71b;
+	text-align: left;
+
+	position:absolute;
+	top:770px;
+	left:50px;
+	width: 1200px;
+	height: 300px;
+
+	text-shadow: 3px 3px #000000;
+}
+
+.reveal .author {
+	color: #74b71b;
+	text-align: left;
+
+	position:absolute;
+	top:880px;
+	left:50px;
+	width:1200px;
+	height: 200px;
+
+	font-size: 130%;
+	text-shadow: 5px 5px #000000;
+}
+
+.reveal section img {
+	border-style: none;
+	box-shadow: none;
+	background: none;
+}
+
+.nvlogo {
+	position:absolute;
+	text-align: left;
+
+	top:650px;
+	left:50px;
+	width:1000px;
+	height: 300px;
+}
+
+body {
+	background: url("nv2-processed.png");
+}
