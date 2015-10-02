@@ -125,8 +125,15 @@
 		<div class="center">
 		<math>
 		<mrow>
-		<mi>M</mi>
-		<mo>=</mo>
+		<mfenced open="[" close="]">
+		<mtable id="icoPointCoords">
+		<mtr><mtd><mi>x</mi></mtd></mtr>
+		<mtr><mtd><mi>y</mi></mtd></mtr>
+		<mtr><mtd><mi>z</mi></mtd></mtr>
+		<mtr><mtd><mi>w</mi></mtd></mtr>
+		</mtable>
+		</mfenced>
+		&times;
 		<mfenced open="[" close="]">
 		<mtable id="matrixTable">
 		<mtr>
@@ -153,6 +160,15 @@
 			<mtd class=""><mi></mi></mtd>
 			<mtd class=""><mi></mi></mtd>
 		</mtr>
+		</mtable>
+		</mfenced>
+		=
+		<mfenced open="[" close="]">
+		<mtable id="finalPointCoords">
+		<mtr><mtd><mi>x</mi></mtd></mtr>
+		<mtr><mtd><mi>y</mi></mtd></mtr>
+		<mtr><mtd><mi>z</mi></mtd></mtr>
+		<mtr><mtd><mi>w</mi></mtd></mtr>
 		</mtable>
 		</mfenced>
 		</mrow>
@@ -206,6 +222,9 @@
 			var frame = getCurrentSlideFrame();
 			var matrixDOM = document.getElementById("matrixTable");
 			var pointDOM = document.getElementById("pointCoords");
+			var icoPointDOM = document.getElementById("icoPointCoords");
+			var finalPointDOM = document.getElementById("finalPointCoords");
+			var icoPoint = frame.ico.point.position;
 			var matrix = frame.ico.matrix;
 			var point = frame.point1;
 
@@ -213,6 +232,24 @@
 				pointDOM.children[0].children[0].children[0].innerHTML = point.position.x.toFixed(2);
 				pointDOM.children[1].children[0].innerHTML = point.position.y.toFixed(2);
 				pointDOM.children[2].children[0].innerHTML = point.position.z.toFixed(2);
+			}
+
+			function updateIcoPoint() {
+				icoPointDOM.children[0].children[0].children[0].innerHTML = icoPoint.x.toFixed(2);
+				icoPointDOM.children[1].children[0].innerHTML = icoPoint.y.toFixed(2);
+				icoPointDOM.children[2].children[0].innerHTML = icoPoint.z.toFixed(2);
+				icoPointDOM.children[3].children[0].innerHTML = Number(1).toFixed(2);
+			}
+
+			function updateFinalPoint() {
+				var point = icoPoint.clone();
+
+				point.applyMatrix4(matrix);
+
+				finalPointDOM.children[0].children[0].children[0].innerHTML = point.x.toFixed(2);
+				finalPointDOM.children[1].children[0].innerHTML = point.y.toFixed(2);
+				finalPointDOM.children[2].children[0].innerHTML = point.z.toFixed(2);
+				finalPointDOM.children[3].children[0].innerHTML = Number(1).toFixed(2);
 			}
 
 			function updateMatrix() {
@@ -226,11 +263,14 @@
 					return;
 				updatePoint();
 				updateMatrix();
+				updateFinalPoint();
 				requestAnimationFrame(animate);
 			}
 
 			updatePoint();
+			updateIcoPoint();
 			updateMatrix();
+			updateFinalPoint();
 
 			requestAnimationFrame(animate);
 		}

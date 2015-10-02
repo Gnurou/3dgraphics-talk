@@ -412,7 +412,7 @@ function() {
 	points.fadeTween = new TWEEN.Tween(point1.material)
 		.to({opacity: 0})
 		.onStop(function() {
-			this.opacity = 0;
+			this.opacity = 1;
 			scene.remove(line);
 			scene.remove(points);
 		})
@@ -454,6 +454,10 @@ function() {
 	ico.tween.stop();
 	camera.tween.stop();
 
+	ico.point = Point(ico.geometry.vertices[1]);
+	ico.point.visible = true;
+	ico.add(ico.point);
+
 	camera.tween = new SmoothTween(cameraContainer.rotation)
 		.to({y: Math.PI * 2})
 		.onStop(function() {
@@ -461,11 +465,12 @@ function() {
 		})
 		.start();
 	camera.tween2 = new SmoothTween(camera.position)
-		.to({x: 1.5, y: 1.5, z: 12})
+		.to({x: 3, y: 1.5, z: 12})
 		.onStop(function() {
-			this.set(1.5, 1.5, 12);
+			this.set(3, 1.5, 12);
 		})
 		.start();
+
 	return ["matrixMul matIdentity", "shape threePoints twoPoints"];
 },
 // Translation
@@ -616,6 +621,7 @@ function() {
 function() {
 	ico.moveTween.stop();
 	ico.rotateTween.stop();
+	ico.remove(ico.point);
 
 	camera.tween = new SmoothTween(camera.position)
 		.to(observer.position)
@@ -649,6 +655,8 @@ function() {
 
 	renderer.render(scene, observerCamera, display.renderBuffer);
 
+	ico.visible = false;
+
 	display.visible = true;
 	display.frame.material.opacity = 0;
 	display.fadeInTween = new SmoothTween(display.frame.material)
@@ -680,6 +688,7 @@ function() {
 		.start();
 },
 function() {
+	ico.visible = true;
 	camera.tween.stop();
 	camera.tween2.stop();
 
@@ -972,6 +981,8 @@ function() {
 },
 // Move back to observer viewpoint and fade display out
 function() {
+	ico.visible = false;
+
 	camera.tween = new SmoothTween(camera.position)
 		.to(observer.position)
 		.onStop(function() {
