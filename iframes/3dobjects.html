@@ -663,9 +663,9 @@ function() {
 	camera.tween.stop();
 
 	camera.tween = new SmoothTween(camera.position)
-		.to({x: 5, y: 5, z: display.position.z + 11}, 2000)
+		.to({x: 10, y: 2, z: display.position.z + 11}, 2000)
 		.onStop(function() {
-			this.set(5, 5, display.position.z + 11);
+			this.set(10, 2, display.position.z + 11);
 		})
 		.start();
 	camera.tween2 = new SmoothTween(camera.lastLookAt)

@@ -11,8 +11,8 @@ math {
 	text-align: left;
 	position:absolute;
 	top:50px;
-	left:75px;
-	width: 500px;
+	left:50%;
+	/*width: 500px;*/
 }
 
 .stateHidden {
