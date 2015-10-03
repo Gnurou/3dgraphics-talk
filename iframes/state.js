@@ -45,7 +45,6 @@ var scriptReady = false;
 function startFrame(independant = false) {
 	scriptReady = true;
 
-	initFrame();
 	animate();
 
 	/* In a frame and not independant? don't play */
