@@ -64,6 +64,8 @@
 		var displayGeo = new THREE.BufferGeometry();
 		var pixelGeo = new THREE.BufferGeometry();
 		var pixelArray = [];
+		var ddsw = dw / dsw * 2;
+		var ddsh = dh / dsh * 2;
 
 		THREE.Object3D.call(this);
 
@@ -81,7 +83,7 @@
 			linewidth: 3,
 		}), THREE.LineStrip);
 
-		for (var i = -dh + dsh; i < dh; i += dsh) {
+		for (var i = -dh + ddsh; i < dh; i += ddsh) {
 			pixelArray.push(-dw);
 			pixelArray.push(i);
 			pixelArray.push(0);
@@ -89,7 +91,7 @@
 			pixelArray.push(i);
 			pixelArray.push(0);
 		}
-		for (var i = -dw + dsw; i < dw; i += dsw) {
+		for (var i = -dw + ddsw; i < dw; i += ddsw) {
 			pixelArray.push(i);
 			pixelArray.push(-dh);
 			pixelArray.push(0);
@@ -108,7 +110,7 @@
 		this.add(this.frame);
 		this.add(this.pixels);
 
-		this.renderBuffer = new THREE.WebGLRenderTarget(512, 512, {
+		this.renderBuffer = new THREE.WebGLRenderTarget(dsw, dsh, {
 			magFilter: THREE.NearestFilter,
 			minFilter: THREE.NearestFilter,
 			wrapS: THREE.ClampToEdgeWrapping,

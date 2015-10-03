@@ -3,6 +3,16 @@ mtd {
 	text-align: center;
 }
 
+.centered tr td {
+	text-align: center;
+	vertical-align: middle;
+}
+
+.centered tr th {
+	text-align: center;
+	vertical-align: middle;
+}
+
 math {
 	font-size: 80%;
 }
@@ -13,6 +23,10 @@ math {
 	top:50px;
 	left:50%;
 	/*width: 500px;*/
+}
+
+.stateInvisible {
+	visibility: hidden;
 }
 
 .stateHidden {

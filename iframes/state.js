@@ -42,14 +42,14 @@ function onKeyEvent(event) {
 
 var scriptReady = false;
 
-function startFrame() {
+function startFrame(independant = false) {
 	scriptReady = true;
 
 	initFrame();
 	animate();
 
-	/* Not in a frame, start playing */
-	if (window != window.top)
+	/* In a frame and not independant? don't play */
+	if (window != window.top && !independant)
 		return;
 
 	function _animate(time) {

@@ -62,6 +62,18 @@ var flatShadingMaterial = new THREE.MeshLambertMaterial({
 
 initComplete = true;
 
+var startFunction;
+
+function startAnimate() {
+	keepGoing = true;
+	function _animate(time) {
+		if (animate(time))
+			requestAnimationFrame(_animate);
+	}
+
+	requestAnimationFrame(_animate);
+}
+
 var stateAction = [
 function() {
 	cube = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), wireFrameMaterial);
@@ -72,11 +84,27 @@ function() {
 	camera.position.set(0, 0, 8);
 },
 function() {
-	cube.rotation.y = Math.PI / 1.5;
-	cube.rotation.z = Math.PI / 1.5;
-	cube.position.set(0, 0, 0);
+	startFunction = function() {
+		cube.rotTween = new SmoothTween(cube.rotation)
+			.to({y: Math.PI / 1.5, z: Math.PI / 1.5})
+			.onStop(function() {
+				cube.rotation.y = Math.PI / 1.5;
+				cube.rotation.z = Math.PI / 1.5;
+				keepGoing = false;
+			})
+			.onComplete(function() {
+				keepGoing = false;
+			})
+			.start();
+
+		startAnimate();
+	}
 },
 function() {
+	startFunction();
+	cube.rotTween.stop();
+	startFunction = undefined;
+
 	dLight = new THREE.DirectionalLight(0xffffff, 1);
 	dLight.position.set(0, 2.5, 2);
 	scene.add(dLight);
@@ -92,9 +120,10 @@ function() {
 	scene.remove(dLight.helper);
 	cube.material = wireFrameMaterial;
 
-	display = new Display(2, 1.5, 1280, 1024);
+	display = new Display(2, 1.5, 40, 40);
 	display.position.set(0, 0, 4);
 	display.pixels.visible = false;
+	display.visible = false;
 	scene.add(display);
 
 	observer = new THREE.Object3D();
@@ -103,20 +132,40 @@ function() {
 	observer.camera.lookAt(scene.position);
 	observer.add(observer.camera);
 	observer.camera.helper = new THREE.CameraHelper(observer.camera);
+	observer.camera.helper.visible = false;
 	observer.add(observer.camera.helper);
 	scene.add(observer);
 
 	observer.camera.visible = false;
 	display.visible = false;
 	renderer.render(scene, observer.camera, display.renderBuffer);
-	display.visible = true;
-	observer.camera.visible = true;
 
-	camera.position.set(10, 0, 15);
-	camera.lookAt(display.position);
-	camera.lastLookAt = scene.position.clone();
+	startFunction = function() {
+		camera.tween = new SmoothTween(camera.position)
+			.to({x: 16, y: 0, z: 13})
+			.onStop(function() {
+				camera.position.set(16, 0, 13);
+				camera.lookAt(display.position);
+				display.visible = true;
+				observer.camera.helper.visible = true;
+				keepGoing = false;
+			})
+			.onComplete(function() {
+				camera.tween.stop();
+			})
+			.onUpdate(function() {
+				camera.lookAt(display.position);
+			})
+			.start();
+
+		startAnimate();
+	}
 },
 function() {
+	startFunction();
+	camera.tween.stop();
+	startFunction = undefined;
+
 	observer.visible = false;
 	display.visible = false;
 
@@ -135,8 +184,46 @@ function() {
 		vertexColors: THREE.FaceColors,
 	});
 	cube.geometry.colorsNeedUpdate = true
+
+	scene.remove(cube);
+	startFunction = function() {
+		var tmpCube;
+		cube.tween = new TWEEN.Tween({n: 0})
+			.to({n: cube.geometry.faces.length}, 3000)
+			.onUpdate(function() {
+				var n = Math.floor(this.n);
+
+				if (tmpCube && n <= tmpCube.geometry.faces.length)
+					return;
+
+				scene.remove(tmpCube);
+
+				var cubeGeo = cube.geometry.clone();
+				cubeGeo.faces = cubeGeo.faces.slice(0, n);
+				tmpCube = new THREE.Mesh(cubeGeo, cube.material);
+				tmpCube.position.copy(cube.position);
+				tmpCube.rotation.copy(cube.rotation);
+
+				scene.add(tmpCube);
+			})
+			.onStop(function() {
+				scene.remove(tmpCube);
+				scene.add(cube);
+				keepGoing = false;
+			})
+			.onComplete(function() {
+				cube.tween.stop();
+			})
+			.start();
+
+		startAnimate();
+	}
 },
 function() {
+	startFunction();
+	cube.tween.stop();
+	startFunction = undefined;
+
 	var texturedMaterial = new THREE.MeshLambertMaterial({
 		//emissive: 0xffffff,
 		map: THREE.ImageUtils.loadTexture('cube.png'),
@@ -151,13 +238,52 @@ function() {
 
 			return;
 		}
-	
+
 		animate();
 	}
 
 	waitForTexture();
 
 	cube.material = texturedMaterial;
+
+	scene.remove(cube);
+	startFunction = function() {
+		var tmpCube;
+		cube.tween = new TWEEN.Tween({n: 0})
+			.to({n: cube.geometry.faces.length}, 3000)
+			.onUpdate(function() {
+				var n = Math.floor(this.n);
+
+				if (tmpCube && n <= tmpCube.geometry.faces.length)
+					return;
+
+				scene.remove(tmpCube);
+
+				var cubeGeo = cube.geometry.clone();
+				cubeGeo.faces = cubeGeo.faces.slice(0, n);
+				tmpCube = new THREE.Mesh(cubeGeo, cube.material);
+				tmpCube.position.copy(cube.position);
+				tmpCube.rotation.copy(cube.rotation);
+
+				scene.add(tmpCube);
+			})
+			.onStop(function() {
+				scene.remove(tmpCube);
+				scene.add(cube);
+				keepGoing = false;
+			})
+			.onComplete(function() {
+				cube.tween.stop();
+			})
+			.start();
+
+		startAnimate();
+	}
+},
+function() {
+	startFunction();
+	cube.tween.stop();
+	startFunction = undefined;
 },
 ];
 
@@ -179,7 +305,7 @@ function() {
 	}
 
 requestedStep = parseInt(window.location.search.substring(1));
-startFrame();
+startFrame(false);
 
 </script>
 </body>

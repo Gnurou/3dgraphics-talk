@@ -95,7 +95,7 @@
 
 
 
-	var display = new Display(2, 1.5, 4 / 512, 3 / 512);
+	var display = new Display(2, 1.5, 512, 512);
 	//display.position.set(0, 0, 6.5);
 	display.position.set(0, 0, 4);
 	display.pixels.visible = false;
@@ -171,7 +171,7 @@ function() {
 	point3.visible = false;
 
 
-	camera.lookAt(scene.position);
+	//camera.lookAt(scene.position);
 	camera.lastLookAt = scene.position.clone();
 	camera.position.set(1.5, 1.5, 12);
 
@@ -213,9 +213,6 @@ function() {
 		.repeat(1)
 		.yoyo(true)
 		.start();
-},
-function() {
-	return ["point4th", ""];
 },
 // Move point to final location
 function() {
@@ -330,8 +327,10 @@ function() {
 			this.set(3, 1.5, 12);
 		})
 		.start();
-
-	return ["matrixMul matIdentity", "shape threePoints twoPoints"];
+	return ["", "shape threePoints twoPoints"];
+},
+function() {
+	return ["matrixMul matIdentity", ""];
 },
 // Translation
 function() {
@@ -463,6 +462,7 @@ function() {
 function() {
 	ico.moveTween.stop();
 	ico.rotateTween.stop();
+	ico.remove(ico.point);
 
 	ico.moveTween = new SmoothTween(ico.position)
 		.to({x: 0, y: 0, z: 0})
@@ -476,12 +476,13 @@ function() {
 			this.set(0, 0, 0);
 		})
 		.start();
+
+	return ["", "matrixMul matCombi"];
 },
 // Remove axis
 function() {
 	ico.moveTween.stop();
 	ico.rotateTween.stop();
-	ico.remove(ico.point);
 
 	camera.tween = new SmoothTween(camera.position)
 		.to(observer.position)
@@ -506,7 +507,6 @@ function() {
 			scene.remove(axis);
 		})
 		.start();
-	return ["", "matrixMul matCombi"];
 },
 // Display appears
 function() {
@@ -548,11 +548,13 @@ function() {
 		.start();
 },
 function() {
-	ico.visible = true;
 	camera.tween.stop();
 	camera.tween2.stop();
 
 	observer.cameraHelper.visible = true;
+},
+function() {
+	ico.visible = true;
 },
 function() {
 	display.visible = false;
