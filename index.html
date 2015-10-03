@@ -340,57 +340,58 @@
 	<section>
 		<h2>Simplified 3D Rendering Pipeline</h2>
 	</section>
+
 	<section>
 		<table class="centered" id="3dpipeline">
 		<tr>
-			<td colspan="4" class="stateInvisible show1">
+			<td colspan="4" class="show1">
 			<iframe data-src="iframes/cube.html?0" width="200px" height="150px" scrolling="no"></iframe>
 			</td>
 		</tr>
 		<tr>
-			<td colspan="4" class="stateInvisible show2">&#8595;</td>
+			<td colspan="4" class="show2">&#8595;</td>
 		</tr>
 		<tr>
-			<th class="stateInvisible show3">Transform</th>
-			<th class="stateInvisible show4" colspan="2">Lighting</th>
-			<th class="stateInvisible show5">Project</th>
+			<th class="show3">Transform</th>
+			<th class="show4" colspan="2">Lighting</th>
+			<th class="show5">Project</th>
 		</tr>
 		<tr>
-			<td class="stateInvisible show3">
+			<td class="show3">
 			<iframe data-src="iframes/cube.html?1" width="200px" height="150px" scrolling="no"></iframe>
 			</td>
-			<td colspan="2" class="stateInvisible show4">
+			<td colspan="2" class="show4">
 			<iframe data-src="iframes/cube.html?2" width="200px" height="150px" scrolling="no"></iframe>
 			</td>
-			<td class="stateInvisible show5">
+			<td class="show5">
 			<iframe data-src="iframes/cube.html?3" width="200px" height="150px" scrolling="no"></iframe>
 			</td>
 			<td style="padding-left: 5em; text-align:left" class="show10">&#8594; Matrix &amp; floating point operations</td>
 		</tr>
 		<tr>
-		<td colspan="4" class="stateInvisible show6">
+		<td colspan="4" class="show6">
 		&#8595;
 		</td>
 		</tr>
 		<tr>
-		<td colspan="4" class="stateInvisible show6">
+		<td colspan="4" class="show6">
 		<iframe data-src="iframes/cube.html?4" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
 		</td>
 		</tr>
 		<tr>
-		<td colspan="4" class="stateInvisible show7">
+		<td colspan="4" class="show7">
 		&#8595;
 		</td>
 		</tr>
 		<tr>
-			<th colspan="2" class="stateInvisible show8">Raster</th>
-			<th colspan="2" class="stateInvisible show9">Fragment</th>
+			<th colspan="2" class="show8">Raster</th>
+			<th colspan="2" class="show9">Fragment</th>
 		</tr>
 		<tr>
-			<td colspan="2" class="stateInvisible show8">
+			<td colspan="2" class="show8">
 			<iframe data-src="iframes/cube.html?5" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
 			</td>
-			<td colspan="2" class="stateInvisible show9">
+			<td colspan="2" class="show9">
 			<iframe data-src="iframes/cube.html?6" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
 			</td>
 			<td style="padding-left: 5em; text-align:left" class="show11">&#8594; Property interpolation, memory accesses</td>
@@ -433,6 +434,7 @@
 		}
 		</script>
 	</section>
+
 
 	<section>
 		<h2>Hardware Acceleration of 3D Rendering</h2>
@@ -480,56 +482,87 @@
 	</ul>
 	</section>
 
-	<section>
-		<p class="nomargin">3D Geometry + Attributes</p>
-
-		&#8595;
-
-		<table>
+		<section>
+		<table class="centered stateInvisible" id="3dpipeline">
 		<tr>
-			<th style="text-align:center;">Transform</th>
-			<th style="text-align:center;">Lighting</th>
-			<th style="text-align:center;">Project</th>
-		<th></th>
+			<td colspan="4" class="show1">
+			<iframe data-src="iframes/cube.html?0" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
 		</tr>
-		<tr style='text-align: center;'>
-			<td><img src="translation.png" width='180px'/></td>
-			<td><img src="lighting.png" width='180px'/></td>
-			<td><img src="projection.png" width='180px'/></td>
+		<tr>
+			<td colspan="4" class="show2">&#8595;</td>
+		</tr>
+		<tr>
+			<th class="show3">Transform</th>
+			<th class="show4" colspan="2">Lighting</th>
+			<th class="show5">Project</th>
+		</tr>
+		<tr>
+			<td class="show3">
+			<iframe data-src="iframes/cube.html?1" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+			<td colspan="2" class="show4">
+			<iframe data-src="iframes/cube.html?2" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+			<td class="show5">
+			<iframe data-src="iframes/cube.html?3" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+			<td style="padding-left: 5em; text-align:left" class="show10">&#8594; Matrix &amp; floating point operations</td>
+		</tr>
+		<tr>
+		<td colspan="4" class="show6">
+		&#8595;
+		</td>
+		</tr>
+		<tr>
+		<td colspan="4" class="show6">
+		<iframe data-src="iframes/cube.html?4" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="4" class="show7">
+		&#8595;
+		</td>
+		</tr>
+		<tr>
+			<th colspan="2" class="show8">Raster</th>
+			<th colspan="2" class="show9">Fragment</th>
+		</tr>
+		<tr>
+			<td colspan="2" class="show8">
+			<iframe data-src="iframes/cube.html?5" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+			</td>
+			<td colspan="2" class="show9">
+			<iframe data-src="iframes/cube.html?6" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+			</td>
+			<td style="padding-left: 5em; text-align:left" class="show11">&#8594; Property interpolation, memory accesses</td>
 		</tr>
 		</table>
+		<script>
+		document.currentScript.parentNode.nextState = function() {
+			var currentSlide = Reveal.getCurrentSlide();
+			var els = currentSlide.getElementsByClassName("stateInvisible");
 
-		&#8595;
+			if (els.length == 0)
+				return undefined;
 
-		<p>2D Geometry + Attributes</p>
+			var currentSlide = Reveal.getCurrentSlide();
+			var frame = currentSlide.getElementsByTagName("iframe");
+			for (var j = 0; j < frame.length; j++)
+				if (frame[j].contentWindow.startFunction) {
+					frame[j].contentWindow.startFunction();
+					frame[j].contentWindow.stopFunction();
+				}
 
-		&#8595;
+			for (var i = 0; i < els.length; i++) {
+				removeClass(els[i], "stateInvisible");
+			}
 
-		<table>
-		<tr>
-			<th style="text-align:center;">Raster</th>
-
-		</tr>
-		<tr style='text-align: center;'>
-			<td><img src="raster.png" width='180px'/></td>
-		</tr>
-		</table>
-
-		&#8595;
-
-		<table>
-		<tr>
-			<th style="text-align:center;">Fragment Shading</th>
-		</tr>
-		<tr style='text-align: center;'>
-			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
-		</tr>
-		</table>
-
-		<div class="rastercol">
-		Hardware Accelerated
-		</div>
+			return ["", ""];
+		}
+		</script>
 	</section>
+
 
 	<section>
 	<h2>Acceleration of Geometry Processing</h2>

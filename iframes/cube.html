@@ -63,6 +63,8 @@ var flatShadingMaterial = new THREE.MeshLambertMaterial({
 initComplete = true;
 
 var startFunction;
+var stopFunction = function() {
+}
 
 function startAnimate() {
 	keepGoing = true;
@@ -99,10 +101,14 @@ function() {
 
 		startAnimate();
 	}
+
+	stopFunction = function() {
+		cube.rotTween.stop();
+	}
 },
 function() {
 	startFunction();
-	cube.rotTween.stop();
+	stopFunction();
 	startFunction = undefined;
 
 	dLight = new THREE.DirectionalLight(0xffffff, 1);
@@ -160,10 +166,13 @@ function() {
 
 		startAnimate();
 	}
+	stopFunction = function() {
+		camera.tween.stop();
+	}
 },
 function() {
 	startFunction();
-	camera.tween.stop();
+	stopFunction();
 	startFunction = undefined;
 
 	observer.visible = false;
@@ -218,10 +227,13 @@ function() {
 
 		startAnimate();
 	}
+	stopFunction = function() {
+		cube.tween.stop();
+	}
 },
 function() {
 	startFunction();
-	cube.tween.stop();
+	stopFunction();
 	startFunction = undefined;
 
 	var texturedMaterial = new THREE.MeshLambertMaterial({
@@ -279,30 +291,33 @@ function() {
 
 		startAnimate();
 	}
+	stopFunction = function() {
+		cube.tween.stop();
+	}
 },
 function() {
 	startFunction();
-	cube.tween.stop();
+	stopFunction();
 	startFunction = undefined;
 },
 ];
 
-	function animate(time) {
-		time = time || window.performance.now();
+function animate(time) {
+	time = time || window.performance.now();
 
-		TWEEN.update(time);
+	TWEEN.update(time);
 
-		/*
-		 * render the scene with a transparent background if we are
-		 * embedded into an iframe
-		 */
-		renderer.setClearColor(0x000000, (window == window.top));
-		renderer.render(scene, camera);
-		// set black background for off-screen renderings
-		renderer.setClearColor(0x000000, 1);
+	/*
+	 * render the scene with a transparent background if we are
+	 * embedded into an iframe
+	 */
+	renderer.setClearColor(0x000000, (window == window.top));
+	renderer.render(scene, camera);
+	// set black background for off-screen renderings
+	renderer.setClearColor(0x000000, 1);
 
-		return keepGoing;
-	}
+	return keepGoing;
+}
 
 requestedStep = parseInt(window.location.search.substring(1));
 startFrame(false);
