@@ -37,10 +37,12 @@
 	function getSlideFrame(slide) {
 		var t = slide.getElementsByTagName("iframe")
 
-		if (t.length == 0)
-			return null;
+		for (var i = 0; i < t.length; i++) {
+			if (t[i].className == "controlled")
+				return t[i].contentWindow;
+		}
 
-		return t[0].contentWindow;
+		return null;
 	}
 
 	function getCurrentSlideFrame() {
@@ -215,7 +217,7 @@
 
 		</div>
 		<div>
-			<iframe data-src="iframes/3dobjects.html" width="100%" height="1024px" marginwidth="0" marginheight="0" scrolling="no" style="border:medium double rgb(250,0,255)"></iframe>
+			<iframe class="controlled" data-src="iframes/3dobjects.html" width="100%" height="1024px" marginwidth="0" marginheight="0" scrolling="no" style="border:medium double rgb(250,0,255)"></iframe>
 		</div>
 		<script>
 		document.currentScript.parentNode.init = function() {
@@ -342,48 +344,59 @@
 		<h2>Simplified 3D Rendering Pipeline</h2>
 	</section>
 	<section>
-		<p class="nomargin">3D Geometry + Attributes</p>
-
-		&#8595;
-
 		<table>
+		<tr>
+			<td colspan="3" style="text-align:center;">
+			<iframe data-src="iframes/cube.html?0" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" style="text-align:center;">&#8595;</td>
+		</tr>
 		<tr>
 			<th style="text-align:center;">Transform</th>
 			<th style="text-align:center;">Lighting</th>
 			<th style="text-align:center;">Project</th>
-		<th></th>
 		</tr>
 		<tr style='text-align: center;'>
-			<td><img src="translation.png" width='180px'/></td>
-			<td><img src="lighting.png" width='180px'/></td>
-			<td><img src="projection.png" width='180px'/></td>
+			<td style="text-align:center;">
+			<iframe data-src="iframes/cube.html?1" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+			<td style="text-align:center;">
+			<iframe data-src="iframes/cube.html?2" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+			<td style="text-align:center;">
+			<iframe data-src="iframes/cube.html?3" width="200px" height="150px" scrolling="no"></iframe>
+			</td>
+		</tr>
+		<tr>
+		<td colspan="3" style="text-align:center;">
+		&#8595;
+		</td>
+		</tr>
+		<tr>
+		<td colspan="3" style="text-align:center;">
+		<iframe data-src="iframes/cube.html?4" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+		</td>
+		</tr>
+		<tr>
+		<td colspan="3" style="text-align:center;">
+		&#8595;
+		</td>
 		</tr>
 		</table>
-
-		&#8595;
-
-		<p>2D Geometry + Attributes</p>
-
-		&#8595;
-
 		<table>
 		<tr>
 			<th style="text-align:center;">Raster</th>
-
+			<th style="text-align:center;">Fragment</th>
 		</tr>
-		<tr style='text-align: center;'>
-			<td><img src="raster.png" width='180px'/></td>
-		</tr>
-		</table>
-
-		&#8595;
-
-		<table>
 		<tr>
-			<th style="text-align:center;">Fragment Shading</th>
-		</tr>
-		<tr style='text-align: center;'>
-			<td style='text-align: center;'><img src="texturing.png" width='180px'/></td>
+			<td style="text-align:center;visibility:hidden;">
+			<iframe data-src="iframes/cube.html?5" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+			</td>
+			<td style="text-align:center;">
+			<iframe data-src="iframes/cube.html?6" width="200px" height="150px" scrolling="no" style="border:medium solid rgb(255,255,255)"></iframe>
+			</td>
 		</tr>
 		</table>
 	</section>
@@ -417,9 +430,9 @@
 	</section>
 
 	<section>
-		<h2>From 2D to 3D Accelerators</h2>
+		<h2>Acceleration of Raster Operations</h2>
 
-		<iframe data-src="iframes/2dgfx.html" width="1000" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
+		<iframe class="controlled" data-src="iframes/2dgfx.html" width="1400" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no"></iframe>
 
 		<script>
 		document.currentScript.parentNode.init = function() {
@@ -811,7 +824,7 @@
 
 	<section>
 	<h2>Result:</h2>
-	<iframe data-src="iframes/2drender.html" width="1000" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:3px solid #666; margin-bottom:5px; max-width: 100%;"></iframe>
+	<iframe class="controlled" data-src="iframes/2drender.html" width="1000" height="800" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:3px solid #666; margin-bottom:5px; max-width: 100%;"></iframe>
 	</section>
 
 	<section>
@@ -857,7 +870,7 @@
 		progress: true,
 		history: true,
 		center: true,
-		viewDistance: 2,
+		viewDistance: 3,
 
 		transition: 'slide', // none/fade/slide/convex/concave/zoom
 

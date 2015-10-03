@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<script type="text/javascript" src="../includes.js"></script>
+<head>
+	<title>3D rendering</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+
+	<script>"use strict";</script>
+
+	<script>
+		addScript('three', 'build/three.min.js', '../');
+		addScript('threex.windowresize', 'threex.windowresize.js', '../');
+		addScript('tween', 'src/Tween.js', '../');
+	</script>
+	<script src="state.js"></script>
+
+	<script src="common.js"></script>
+
+</head>
+
+<body onkeyup="onKeyEvent(event)">
+<script>
+	"use strict";
+
+	var renderer = new THREE.WebGLRenderer({antialias:true, alpha: true});
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	// Used to rotate the camera around the scene easily
+	var cameraContainer = new THREE.Object3D();
+	cameraContainer.add(camera);
+	scene.add(cameraContainer);
+
+	THREEx.WindowResize(renderer, camera);
+
+var cube;
+var dLight;
+var display;
+var observer;
+var wireFrameMaterial = new THREE.MeshLambertMaterial({
+	color: 0xffffff,
+	emissive: 0xffffff,
+	shading: THREE.FlatShading,
+	wireframe: true,
+	side: THREE.DoubleSide,
+});
+var flatShadingMaterial = new THREE.MeshLambertMaterial({
+	color: 0xffffff,
+	shading: THREE.FlatShading,
+	side: THREE.DoubleSide,
+});
+
+initComplete = true;
+
+var stateAction = [
+function() {
+	cube = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), wireFrameMaterial);
+	scene.add(cube);
+
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	camera.position.set(0, 0, 8);
+},
+function() {
+	cube.rotation.y = Math.PI / 1.5;
+	cube.rotation.z = Math.PI / 1.5;
+	cube.position.set(0, 0, 0);
+},
+function() {
+	dLight = new THREE.DirectionalLight(0xffffff, 1);
+	dLight.position.set(0, 2.5, 2);
+	scene.add(dLight);
+	dLight.helper = new THREE.DirectionalLightHelper(dLight, 1);
+	dLight.helper.targetLine.material.color.setHex(0xffff00);
+	scene.add(dLight.helper);
+	cube.normalHelper = new THREE.FaceNormalsHelper(cube, 2, 0x00ff00, 1);
+	scene.add(cube.normalHelper);
+	cube.material = flatShadingMaterial;
+},
+function() {
+	scene.remove(cube.normalHelper);
+	scene.remove(dLight.helper);
+	cube.material = wireFrameMaterial;
+
+	display = new Display(2, 1.5, 1280, 1024);
+	display.position.set(0, 0, 4);
+	display.pixels.visible = false;
+	scene.add(display);
+
+	observer = new THREE.Object3D();
+	observer.position.set(0, 0, 5);
+	observer.camera = new THREE.PerspectiveCamera(30, 4.0 / 3.0, 0.1, 100000);
+	observer.camera.lookAt(scene.position);
+	observer.add(observer.camera);
+	observer.camera.helper = new THREE.CameraHelper(observer.camera);
+	observer.add(observer.camera.helper);
+	scene.add(observer);
+
+	observer.camera.visible = false;
+	display.visible = false;
+	renderer.render(scene, observer.camera, display.renderBuffer);
+	display.visible = true;
+	observer.camera.visible = true;
+
+	camera.position.set(10, 0, 15);
+	camera.lookAt(display.position);
+	camera.lastLookAt = scene.position.clone();
+},
+function() {
+	observer.visible = false;
+	display.visible = false;
+
+	camera.position.set(0, 0, 8);
+	camera.lookAt(scene.position);
+},
+function() {
+	for (var i = 0; i < cube.geometry.faces.length; i++) {
+		cube.geometry.faces[i].color.setHex(
+			(((i + 1) % 2) * 0xff) +
+			((Math.floor((i + 1) / 2) % 2) * 0xff00) +
+			(Math.floor((i + 1) / 4) * 0xff0000));
+	}
+	cube.material = new THREE.MeshBasicMaterial({
+		//color: 0xffffff,
+		vertexColors: THREE.FaceColors,
+	});
+	cube.geometry.colorsNeedUpdate = true
+},
+function() {
+	var texturedMaterial = new THREE.MeshLambertMaterial({
+		//emissive: 0xffffff,
+		map: THREE.ImageUtils.loadTexture('cube.png'),
+		shading: THREE.FlatShading,
+	});
+
+	function waitForTexture() {
+		if (texturedMaterial.map.image == undefined) {
+			setTimeout(function() {
+				waitForTexture();
+			}, 50);
+
+			return;
+		}
+	
+		animate();
+	}
+
+	waitForTexture();
+
+	cube.material = texturedMaterial;
+},
+];
+
+	function animate(time) {
+		time = time || window.performance.now();
+
+		TWEEN.update(time);
+
+		/*
+		 * render the scene with a transparent background if we are
+		 * embedded into an iframe
+		 */
+		renderer.setClearColor(0x000000, (window == window.top));
+		renderer.render(scene, camera);
+		// set black background for off-screen renderings
+		renderer.setClearColor(0x000000, 1);
+
+		return keepGoing;
+	}
+
+requestedStep = parseInt(window.location.search.substring(1));
+startFrame();
+
+</script>
+</body>
+</html>

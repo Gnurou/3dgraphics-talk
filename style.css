@@ -1,5 +1,5 @@
 mtd {
-	width: 2em;
+	width: 2.5em;
 	text-align: center;
 }
 
@@ -104,6 +104,9 @@ math {
 	box-shadow: none;
 	background: none;
 }
+
+.reveal table th, .reveal table td {
+  border-bottom: none; }
 
 .nvlogo {
 	position:absolute;

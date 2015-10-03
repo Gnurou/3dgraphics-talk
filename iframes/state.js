@@ -1,6 +1,7 @@
 var stateAction = [];
 var state = 0;
 var keepGoing;
+var requestedStep = 0;
 
 function nextState() {
 	if (state + 1 >= stateAction.length)
@@ -17,7 +18,12 @@ function initFrame() {
 	if (state >= stateAction.length)
 		return undefined;
 
-	return stateAction[state]() || ["", ""];
+	ret = stateAction[state]() || ["", ""];
+	for (var i = 0; i < requestedStep; i++) {
+		ret = nextState();
+	}
+
+	return ret;
 }
 
 function finiFrame() {
@@ -38,7 +44,9 @@ var scriptReady = false;
 
 function startFrame() {
 	scriptReady = true;
-	console.log("script ready");
+
+	initFrame();
+	animate();
 
 	/* Not in a frame, start playing */
 	if (window != window.top)
@@ -49,7 +57,6 @@ function startFrame() {
 			requestAnimationFrame(_animate);
 	}
 
-	initFrame();
 	requestAnimationFrame(_animate);
 }
 
