@@ -2,7 +2,7 @@
 <html lang="en">
 <script type="text/javascript" src="../includes.js"></script>
 <head>
-	<title>three.js</title>
+	<title>2D/3D accelerators</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 	<style>
@@ -11,9 +11,9 @@
 	</style>
 	<script>
 		addScript('raphael', 'raphael-min.js', '../');
+		addScript('tween', 'src/Tween.js', '../');
 	</script>
 	<script src="state.js"></script>
-
 </head>
 
 <body>
@@ -35,7 +35,7 @@ function TextNode(x, y, w, h, label) {
 	obj.push(obj.text);
 	obj.push(obj.label);
 
-	obj.attr({"font-size": "30px", "font-weight": "bold"});
+	obj.attr({"font-family": "monospace", "font-size": "30px", "font-weight": "bold"});
 	obj.rect.attr({"fill": "#ffffff"});
 	obj.label.attr({"fill": "#aaaaaa"});
 
@@ -60,6 +60,63 @@ function GpuRegs(x, y, w, h, regs) {
 		}
 	};
 
+	obj.fill = function(reg, col) {
+		this[obj.regs[reg]].rect.attr({"fill": col});
+	};
+
+	return obj;
+}
+
+function PushBuffer(x, y, w, h, n) {
+	var obj = R.set();
+	var pos = -1;
+	var nbDraw = 0;
+
+	for (var i = 0; i < n; i++) {
+		var t = TextNode(x, y + (h * i), w, h, "");
+		t.attr({"font-size": "20px", "font-weight": "bold"});
+		obj.push(t);
+	}
+
+	arrow = R.text(x - 20, y + 10, "➜");
+	arrow.attr({"font-size": "30px", "font-weight": "bold", "fill": "#ffffff"});
+
+	obj.set = function(n, value) {
+		this[n].text.attr({"text": value});
+	}
+
+	obj.play = function(regs, npos) {
+		while (pos < npos) {
+			pos += 1;
+			var regNode = this[pos * 2];
+			var reg = regNode.text.attrs["text"];
+			var valNode = this[pos * 2 + 1];
+			var val = valNode.text.attrs["text"];
+			regs.set(reg, val, "#aaaaff");
+
+			arrow.transform("t0,"+ (h * 2 * pos));
+
+			regNode.rect.attr({"fill": "#aaaaff"});
+			valNode.rect.attr({"fill": "#aaaaff"});
+
+			if (pos > 0) {
+				regs.fill(this[(pos - 1) * 2].text.attrs["text"], "#ffffff");
+				this[(pos - 1) * 2].rect.attr({"fill": "#ffffff"});
+				this[(pos - 1) * 2 + 1].rect.attr({"fill": "#ffffff"});
+			}
+
+			if (reg == "DST3") {
+				if (nbDraw == 0)
+					framebuffer.cube1 = R.image('cubeperspective1.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
+				else
+					framebuffer.cube2 = R.image('cubeperspective2.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
+				nbDraw += 1;
+				if (nbDraw == 2)
+					nbDraw = 0;
+			}
+		}
+	}
+
 	return obj;
 }
 
@@ -70,78 +127,107 @@ function PCircle(ref, x, y, col) {
 	return obj;
 }
 
-initComplete = true;
-
+var pbLength = 150;
+var pbPos = 50;
 var regsLength = 200;
+var regsPos = R.width - (regsLength + 80);
+
+initComplete = true;
 
 var stateAction = [
 function() {
-	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+	regs = GpuRegs(regsPos, 50, regsLength, 40,
 		[
 		"OP",
 		"COLOR",
-		"SRCPOS",
+		"SRC1",
+		"SRC2",
 		"SRCSIZE",
-		"DSTPOS",
+		"DST1",
+		"DST2",
 		"DSTSIZE",
 		]);
-},
-function() {
 	var frameBufferWidth = 400 * 1.5;
 	var frameBufferHeight = 300 * 1.5;
-	framebuffer = R.rect(20, R.height - (frameBufferHeight + 20), frameBufferWidth, frameBufferHeight);
+	framebuffer = R.rect(pbPos + pbLength + 70, R.height - (frameBufferHeight + 20), frameBufferWidth, frameBufferHeight);
 	framebuffer.attr({'fill': "#000000", 'stroke': "#ffffff"});
 },
 function() {
-	regs.set("OP", "RECT");
+	return ["colorFill", ""];
+},
+function() {
+	regs.set("OP", "FILL");
 },
 function() {
 	regs.set("COLOR", "0x00ff00");
 },
 function() {
-	regs.set("SRCSIZE", "(50, 50)");
-},
-function() {
 	regs.set("DSTSIZE", "(400, 300)");
 },
 function() {
-	regs.set("DSTPOS", "(30, 30)");
+	regs.set("DST1", "(100, 100)", "#ffff00");
+	framebuffer.p1 = PCircle(framebuffer, 100 * 1.5, 100 * 1.5, "#ffff00");
 },
 function() {
-	framebuffer.rect = R.rect(framebuffer.attrs.x + 30 * 1.5, framebuffer.attrs.y + 30 * 1.5, 50 * 1.5, 50 * 1.5);
+	regs.set("DST2", "(150, 150)", "#ff00ff");
+	framebuffer.p2 = PCircle(framebuffer, 150 * 1.5, 150 * 1.5, "#ff00ff");
+},
+function() {
+	framebuffer.rect = R.rect(framebuffer.attrs.x + 100 * 1.5, framebuffer.attrs.y + 100 * 1.5, 50 * 1.5, 50 * 1.5);
 	framebuffer.rect.attr({"fill": "#00ff00"});
+	framebuffer.p1.remove();
+	framebuffer.p2.remove();
 },
 function() {
+	framebuffer.rect.remove();
 	regs.remove();
-	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+	regs = GpuRegs(regsPos, 50, regsLength, 40,
 		[
 		"OP",
 		"COLOR",
-		"SRCPOS",
+		"SRC1",
+		"SRC2",
 		"SRCSIZE",
-		"DSTPOS",
+		"DST1",
+		"DST2",
 		"DSTSIZE",
 		]);
 
-	pixmap = R.image('cube.png', 20 * 1.5, 20 * 1.5, 100 * 1.5, 100 * 1.5);
+	pixmap = R.image('cube.png', pbPos + pbLength + 70, 100, 100 * 1.5, 100 * 1.5);
+
+	return ["blit", "colorFill"];
 },
 function() {
 	regs.set("OP", "BLIT");
 },
 function() {
-	regs.set("SRCSIZE", "(100, 100)");
-},
-function() {
-	regs.set("SRCPOS", "(0, 0)");
-},
-function() {
 	regs.set("DSTSIZE", "(400, 300)");
 },
 function() {
-	regs.set("DSTPOS", "(150, 150)");
+	regs.set("SRCSIZE", "(100, 100)");
 },
 function() {
-	framebuffer.pixmap = R.image('cube.png', framebuffer.attrs.x + 150 * 1.5, framebuffer.attrs.y + 150 * 1.5, 100 * 1.5, 100 * 1.5);
+	regs.set("SRC1", "(0, 0)", "#ff0000");
+	pixmap.p1 = PCircle(pixmap, 0, 0, "#ff0000");
+},
+function() {
+	regs.set("SRC2", "(100, 100)", "#00ff00");
+	pixmap.p2 = PCircle(pixmap, 150, 150, "#00ff00");
+},
+function() {
+	regs.set("DST1", "(100, 100)", "#ffff00");
+	framebuffer.p1 = PCircle(framebuffer, 100 * 1.5, 100 * 1.5, "#ffff00");
+},
+function() {
+	regs.set("DST2", "(250, 250)", "#ff00ff");
+	framebuffer.p2 = PCircle(framebuffer, 250 * 1.5, 250 * 1.5, "#ff00ff");
+},
+function() {
+	framebuffer.pixmap = R.image('cube.png', framebuffer.attrs.x + 100 * 1.5, framebuffer.attrs.y + 100 * 1.5, 150 * 1.5, 150 * 1.5);
+	pixmap.p1.remove();
+	pixmap.p2.remove();
+	framebuffer.p1.remove();
+	framebuffer.p2.remove();
 },
 function() {
 	framebuffer.pixmap.remove();
@@ -149,7 +235,7 @@ function() {
 
 	regs.remove();
 
-	regs = GpuRegs(R.width - (regsLength + 20), 50, regsLength, 40,
+	regs = GpuRegs(regsPos, 50, regsLength, 40,
 		[
 		"OP",
 		"SRC1",
@@ -161,9 +247,13 @@ function() {
 		"DST3",
 		"DSTSIZE",
 		]);
+	return ["triangle", "blit"];
 },
 function() {
 	regs.set("OP", "TRI");
+},
+function() {
+	regs.set("DSTSIZE", "(400, 300)");
 },
 function() {
 	regs.set("SRCSIZE", "(100, 100)");
@@ -181,9 +271,6 @@ function() {
 	pixmap.p3 = PCircle(pixmap, 0, 150, "#0000ff");
 },
 function() {
-	regs.set("DSTSIZE", "(400, 300)");
-},
-function() {
 	regs.set("DST1", "(80, 90)", "#ffff00");
 	framebuffer.p1 = PCircle(framebuffer, 80 * 1.5, 100 * 1.5, "#ffff00");
 },
@@ -196,7 +283,6 @@ function() {
 	framebuffer.p3 = PCircle(framebuffer, 80 * 1.5, 160 * 1.5, "#00ffff");
 },
 function() {
-	framebuffer.triangle =
 	framebuffer.cube1 = R.image('cubeperspective1.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
 },
 function() {
@@ -224,21 +310,118 @@ function() {
 	framebuffer.cube2 = R.image('cubeperspective2.png', framebuffer.attrs.x + 80 * 1.5, framebuffer.attrs.y + 80 * 1.5, 100 * 1.5, 100 * 1.5);
 },
 function() {
-	return ["1stGen", ""];
+	return ["1stGen", "triangle"];
 },
+function() {
+	regs.remove();
+	pixmap.p1.remove();
+	pixmap.p2.remove();
+	pixmap.p3.remove();
+	framebuffer.p1.remove();
+	framebuffer.p2.remove();
+	framebuffer.p3.remove();
+	framebuffer.cube1.remove();
+	framebuffer.cube2.remove();
+
+	regs = GpuRegs(regsPos, 50, regsLength, 40,
+		[
+		"OP",
+		"SRC1",
+		"SRC2",
+		"SRC3",
+		"SRCSIZE",
+		"DST1",
+		"DST2",
+		"DST3",
+		"DSTSIZE",
+		]);
+
+	return ["", "1stGen"];
+},
+function() {
+	pb = PushBuffer(pbPos, 50, pbLength, 25, 30);
+
+	return ["pushbuffer", ""];
+},
+function() {
+	pb.set(0, "OP");
+},
+function() {
+	pb.set(1, "TRI");
+},
+function() {
+	pb.set(2, "DSTSIZE");
+	pb.set(3, "(400, 300)");
+},
+function() {
+	pb.set(4, "SRCSIZE");
+	pb.set(5, "(100, 100)");
+},
+function() {
+	pb.set(6, "SRC1");
+	pb.set(7, "(0, 0)");
+},
+function() {
+	pb.set(8, "SRC2");
+	pb.set(9, "(100, 0)");
+},
+function() {
+	pb.set(10, "SRC3");
+	pb.set(11, "(0, 100)");
+},
+function() {
+	pb.set(12, "DST1");
+	pb.set(13, "(80, 90)");
+},
+function() {
+	pb.set(14, "DST2");
+	pb.set(15, "(180, 80)");
+},
+function() {
+	pb.set(16, "DST3");
+	pb.set(17, "(80, 160)");
+},
+function() {
+	pb.set(18, "SRC1");
+	pb.set(19, "(0, 100)");
+	pb.set(20, "SRC2");
+	pb.set(21, "(100, 0)");
+	pb.set(22, "SRC3");
+	pb.set(23, "(100, 100)");
+	pb.set(24, "DST1");
+	pb.set(25, "(80, 180)");
+	pb.set(26, "DST2");
+	pb.set(27, "(180, 80)");
+	pb.set(28, "DST3");
+	pb.set(29, "(180, 180)");
+},
+function() {
+	pb.tween = new TWEEN.Tween({pos: 0, lastPos: -1})
+		.to({pos: (pb.length / 2) - 1}, pb.length * 500 / 2)
+		.onUpdate(function() {
+			var pos = Math.floor(this.pos);
+			if (pos > this.lastPos) {
+				this.lastPos = pos;
+				pb.play(regs, pos);
+			}
+		})
+		.onStop(function() {
+			var pos = (pb.length / 2) - 1;
+			if (pos > this.lastPos) {
+				this.lastPos = pos;
+				pb.play(regs, pos);
+			}
+		})
+		.start()
+}
 ];
 
 function animate(time) {
+	TWEEN.update(time);
 	return keepGoing;
 }
 
 startFrame();
 
-//var text = new textNode(50, 50, 50, 20, "Tralala");
-//text.text.attr({text: "Foo"});
-// Sets the fill attribute of the circle to red (#f00)
-//circle.attr("fill", "#f00");
-// Sets the stroke attribute of the circle to white
-//circle.attr("stroke", "#fff");
 </script>
 </body>

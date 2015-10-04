@@ -47,14 +47,11 @@ var stateAction = [
 function() {
 	gpu = TextNode((R.width - areaLength) - (vSep * 2), 20, areaLength, 60, "GPU", "#cc3333");
 
-	nouveauDRM = TextNode(gpu.getBBox().x, gpu.getBBox().y2 + vSep, areaLength, 60, "Nouveau DRM", "#33cc33");
+	nouveauDRM = TextNode(gpu.getBBox().x, gpu.getBBox().y2 + vSep, areaLength, 60, "DRM", "#33cc33");
 
 	line = R.path([ "M", 20, nouveauDRM.getBBox().y2 + vSep, "L", nouveauDRM.getBBox().x2 + 30, nouveauDRM.getBBox().y2 + vSep ]).attr({"stroke": "#aaaaaa", "stroke-width": 5});
 
 	libDRM = TextNode(nouveauDRM.getBBox().x, line.getBBox().y2 + vSep, areaLength, 60, "libdrm", "#33cc33");
-
-
-
 
 	openGL = TextNode(nouveauDRM.getBBox().x, libDRM.getBBox().y2 + vSep, (areaLength / 4) - vSep, 300, "OpenGL", "#3333cc");
 

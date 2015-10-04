@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<script type="text/javascript" src="../includes.js"></script>
+<head>
+	<title>3D rendering</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+	body { margin: 0; }
+	canvas { width: 100%; height: 100% }
+	</style>
+
+	<script>"use strict";</script>
+
+	<script>
+		addScript('three', 'build/three.min.js', '../');
+		addScript('threex.windowresize', 'threex.windowresize.js', '../');
+		addScript('tween', 'src/Tween.js', '../');
+	</script>
+	<script src="state.js"></script>
+
+	<script src="common.js"></script>
+
+</head>
+
+<body onkeyup="onKeyEvent(event)">
+<script>
+	"use strict";
+
+	var renderer = new THREE.WebGLRenderer({antialias:true, alpha: true});
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	var scene = new THREE.Scene();
+
+	var camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 0.1, 1000);
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	// Used to rotate the camera around the scene easily
+	var cameraContainer = new THREE.Object3D();
+	cameraContainer.add(camera);
+	scene.add(cameraContainer);
+
+	THREEx.WindowResize(renderer, camera);
+
+var cube;
+var dLight;
+var texturedMaterial = new THREE.MeshLambertMaterial({
+	//emissive: 0xffffff,
+	map: THREE.ImageUtils.loadTexture('cube.png'),
+	shading: THREE.FlatShading,
+});
+var cubes = [];
+
+initComplete = true;
+
+var stateAction = [
+function() {
+	cube = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), texturedMaterial);
+	scene.add(cube);
+
+	camera.lookAt(scene.position);
+	camera.lastLookAt = scene.position.clone();
+	camera.position.set(0, 0, 15);
+
+	dLight = new THREE.DirectionalLight(0xffffff, 1);
+	dLight.position.set(0, 2.5, 2);
+	scene.add(dLight);
+
+	cube.rotateTween = new TWEEN.Tween(cube.rotation)
+		.to({x: Math.PI * 2, y: Math.PI * 2, z: Math.PI * 2}, 6000)
+		.onStop(function() {
+			cube.rotation.x = 0;
+			cube.rotation.y = 0;
+			cube.rotation.z = 0;
+		})
+		.repeat(Infinity)
+		.onUpdate(function() {
+			for (var i = 0; i < cubes.length; i++) {
+				var cube2 = cubes[i];
+				cube2.rotation.set(
+					cube2.initRot.x + cube.rotation.x,
+					cube2.initRot.y + cube.rotation.y,
+					cube2.initRot.z + cube.rotation.z);
+			}
+		})
+		.start();
+},
+// Plenty of cubez!
+function() {
+	scene.cubesTween = new TWEEN.Tween({n: 0})
+		.to({n: 300}, 3000)
+		.onUpdate(function() {
+			for (var i = cubes.length; i < Math.floor(this.n); i++) {
+				var cube2 = cube.clone();
+				cube2.position.set(-1.5 + Math.random() * 3, -1.5 + Math.random() * 3, -1.5 + Math.random() * 3);
+				cube2.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+				cube2.initRot = cube2.rotation.clone();
+				scene.add(cube2);
+				cubes.push(cube2);
+			}
+
+			var fade = 0xff - Math.floor((this.n / 300) * 0xff);
+			var str = fade.toString(16);
+			if (str.length == 1)
+				str = "0" + str;
+			vshader.attr({"fill": "#ff" + str + str});
+		})
+		.start();
+},
+function() {
+	camera.tween = new SmoothTween(camera.position)
+		.to({z: 250}, 3000)
+		.start();
+},
+function() {
+	camera.tween = new SmoothTween(camera.position)
+		.to({z: 2.5}, 4000)
+		.start();
+	scene.cubesTween = new TWEEN.Tween({n: cubes.length})
+		.to({n: 0}, 3000)
+		.onUpdate(function() {
+			var n = Math.floor(this.n);
+			while (n < cubes.length) {
+				var cube2 = cubes.pop();
+				scene.remove(cube2);
+			}
+
+			var fade = 0xff - Math.floor((this.n / 300) * 0xff);
+			var str = fade.toString(16);
+			if (str.length == 1)
+				str = "0" + str;
+			vshader.attr({"fill": "#ff" + str + str});
+
+			var fade = Math.floor((this.n / 300) * 0xff);
+			var str = fade.toString(16);
+			if (str.length == 1)
+				str = "0" + str;
+			pshader.attr({"fill": "#ff" + str + str});
+		})
+		.start();
+},
+];
+
+function animate(time) {
+	time = time || window.performance.now();
+
+	TWEEN.update(time);
+
+	/*
+	 * render the scene with a transparent background if we are
+	 * embedded into an iframe
+	 */
+	renderer.setClearColor(0x000000, (window == window.top));
+	renderer.render(scene, camera);
+	// set black background for off-screen renderings
+	renderer.setClearColor(0x000000, 1);
+
+	return keepGoing;
+}
+
+initFrame();
+startFrame();
+
+</script>
+</body>
+</html>

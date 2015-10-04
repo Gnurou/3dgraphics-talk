@@ -91,12 +91,22 @@ math {
 	text-align: left;
 
 	position:absolute;
-	top:770px;
-	left:50px;
+	top:750px;
+	left:150px;
 	width: 1200px;
 	height: 300px;
 
 	text-shadow: 3px 3px #000000;
+}
+
+.nvlogo {
+	position:absolute;
+	text-align: left;
+
+	top:610px;
+	left:150px;
+	width:1000px;
+	height: 300px;
 }
 
 .reveal .author {
@@ -104,8 +114,8 @@ math {
 	text-align: left;
 
 	position:absolute;
-	top:880px;
-	left:50px;
+	top:840px;
+	left:150px;
 	width:1200px;
 	height: 200px;
 
@@ -120,16 +130,7 @@ math {
 }
 
 .reveal table th, .reveal table td {
-  border-bottom: none; }
-
-.nvlogo {
-	position:absolute;
-	text-align: left;
-
-	top:650px;
-	left:50px;
-	width:1000px;
-	height: 300px;
+  border-bottom: none;
 }
 
 body {

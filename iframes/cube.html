@@ -59,12 +59,15 @@ var flatShadingMaterial = new THREE.MeshLambertMaterial({
 	shading: THREE.FlatShading,
 	side: THREE.DoubleSide,
 });
+var cubes = [];
 
 initComplete = true;
 
 var startFunction;
 var stopFunction = function() {
 }
+
+var noAnimate = false;
 
 function startAnimate() {
 	keepGoing = true;
@@ -73,7 +76,10 @@ function startAnimate() {
 			requestAnimationFrame(_animate);
 	}
 
-	requestAnimationFrame(_animate);
+	if (noAnimate)
+		animate();
+	else
+		requestAnimationFrame(_animate);
 }
 
 var stateAction = [
@@ -95,10 +101,9 @@ function() {
 				keepGoing = false;
 			})
 			.onComplete(function() {
-				keepGoing = false;
+				cube.rotTween.stop();
 			})
 			.start();
-
 		startAnimate();
 	}
 
@@ -109,17 +114,51 @@ function() {
 function() {
 	startFunction();
 	stopFunction();
-	startFunction = undefined;
 
 	dLight = new THREE.DirectionalLight(0xffffff, 1);
 	dLight.position.set(0, 2.5, 2);
 	scene.add(dLight);
 	dLight.helper = new THREE.DirectionalLightHelper(dLight, 1);
 	dLight.helper.targetLine.material.color.setHex(0xffff00);
+	dLight.helper.targetLine.material.linewidth = 5;
+	dLight.helper.visible = false;
 	scene.add(dLight.helper);
 	cube.normalHelper = new THREE.FaceNormalsHelper(cube, 2, 0x00ff00, 1);
+	cube.normalHelper.visible = false;
 	scene.add(cube.normalHelper);
-	cube.material = flatShadingMaterial;
+
+	cube.step = 0;
+	startFunction = function() {
+		cube.lightTween = new TWEEN.Tween(cube)
+			.to({step: 3}, 2000)
+			.onUpdate(function() {
+				if (this.step >= 1)
+					dLight.helper.visible = true;
+				if (this.step >= 2)
+					cube.normalHelper.visible = true;
+			})
+			.onStop(function() {
+				dLight.helper.visible = true;
+				cube.normalHelper.visible = true;
+				cube.material = flatShadingMaterial;
+				keepGoing = false;
+			})
+			.onComplete(function() {
+				cube.lightTween.stop();
+			})
+			.start();
+		startAnimate();
+	}
+	stopFunction = function() {
+		cube.lightTween.stop();
+	}
+},
+function() {
+	startFunction();
+	stopFunction();
+	startFunction = undefined;
+
+	cube.material = wireFrameMaterial;
 },
 function() {
 	scene.remove(cube.normalHelper);
@@ -163,7 +202,6 @@ function() {
 				camera.lookAt(display.position);
 			})
 			.start();
-
 		startAnimate();
 	}
 	stopFunction = function() {
@@ -182,6 +220,20 @@ function() {
 	camera.lookAt(scene.position);
 },
 function() {
+	dLight.visible = false;
+	cube.oldMaterial = cube.material;
+
+	cube.material = new THREE.MeshLambertMaterial({
+		color: 0xffffff,
+		emissive: 0x8888ff,
+		shading: THREE.FlatShading,
+		side: THREE.DoubleSide,
+	});
+},
+function() {
+	dLight.visible = true;
+	cube.material = cube.oldMaterial;
+
 	for (var i = 0; i < cube.geometry.faces.length; i++) {
 		cube.geometry.faces[i].color.setHex(
 			(((i + 1) % 2) * 0xff) +
@@ -224,7 +276,6 @@ function() {
 				cube.tween.stop();
 			})
 			.start();
-
 		startAnimate();
 	}
 	stopFunction = function() {
@@ -288,7 +339,6 @@ function() {
 				cube.tween.stop();
 			})
 			.start();
-
 		startAnimate();
 	}
 	stopFunction = function() {
@@ -299,6 +349,47 @@ function() {
 	startFunction();
 	stopFunction();
 	startFunction = undefined;
+},
+function() {
+	cube.rotateTween = new TWEEN.Tween(cube.rotation)
+		.to({x: Math.PI * 2, y: Math.PI * 2, z: Math.PI * 2}, 6000)
+		.onStop(function() {
+			cube.rotation.x = 0;
+			cube.rotation.y = 0;
+			cube.rotation.z = 0;
+		})
+		.repeat(Infinity)
+		.start();
+		/*
+		.onUpdate(function() {
+			for (var i = 0; i < cubes.length; i++) {
+				var cube2 = cubes[i];
+				cube2.rotation.set(
+					cube2.initRot.x + cube.rotation.x,
+					cube2.initRot.y + cube.rotation.y,
+					cube2.initRot.z + cube.rotation.z);
+			}
+		})
+		*/
+},
+// Plenty of cubez!
+function() {
+	scene.cubesTween = new TWEEN.Tween({n: 0})
+		.to({n: 100}, 3000)
+		.onUpdate(function() {
+			for (var i = cubes.length; i < Math.floor(this.n); i++) {
+				var cube2 = cube.clone();
+				cube2.position.set(-1.5 + Math.random() * 3, -1.5 + Math.random() * 3, -1.5 + Math.random() * 3);
+				cube2.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+				cube2.initRot = cube2.rotation.clone();
+				scene.add(cube2);
+				cubes.push(cube2);
+			}
+		})
+		.start();
+},
+function() {
+	scene.cubesTween.stop();
 },
 ];
 

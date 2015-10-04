@@ -1,3 +1,6 @@
+var scriptReady = false;
+var initComplete = false;
+
 var stateAction = [];
 var state = 0;
 var keepGoing;
@@ -26,11 +29,6 @@ function initFrame() {
 	return ret;
 }
 
-function finiFrame() {
-	keepGoing = false;
-	stop();
-}
-
 function onKeyEvent(event) {
 	// In an iFrame, get events from above...
 	if (window != window.top)
@@ -40,12 +38,8 @@ function onKeyEvent(event) {
 		nextState();
 }
 
-var scriptReady = false;
-
 function startFrame(independant = false) {
 	scriptReady = true;
-
-	animate();
 
 	/* In a frame and not independant? don't play */
 	if (window != window.top && !independant)
@@ -56,7 +50,6 @@ function startFrame(independant = false) {
 			requestAnimationFrame(_animate);
 	}
 
+	keepGoing = true;
 	requestAnimationFrame(_animate);
 }
-
-var initComplete = false;
