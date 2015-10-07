@@ -26,6 +26,7 @@
 <body onkeyup="onKeyEvent(event)">
 <script>
 	"use strict";
+	THREE.ImageUtils.crossOrigin = "anonymous";
 
 	var renderer = new THREE.WebGLRenderer({antialias:true, alpha: true});
 	renderer.setSize(window.innerWidth, window.innerHeight);
