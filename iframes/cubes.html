@@ -45,9 +45,10 @@
 
 var cube;
 var dLight;
+var tex = THREE.ImageUtils.loadTexture('cube.png');
+tex.minFilter = THREE.LinearFilter;
 var texturedMaterial = new THREE.MeshLambertMaterial({
-	//emissive: 0xffffff,
-	map: THREE.ImageUtils.loadTexture('cube.png'),
+	map: tex,
 	shading: THREE.FlatShading,
 });
 var cubes = [];
