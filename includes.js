@@ -1,6 +1,6 @@
 var libSources = {
 'reveal' : [ 'lib/reveal.js/', 'https://rawgit.com/hakimel/reveal.js/master/' ],
-'three' : [ 'lib/three.js/', 'https://rawgit.com/mrdoob/three.js/master/' ],
+'three' : [ 'lib/three.js/', 'https://rawgit.com/mrdoob/three.js/r71/' ],
 'threex.windowresize' : [ 'lib/threex.windowresize/', 'https://rawgit.com/jeromeetienne/threex.windowresize/master/' ],
 'tween' : [ 'lib/tween.js/', 'https://rawgit.com/tweenjs/tween.js/master/' ],
 'raphael' : [ 'lib/raphael/', 'https://rawgit.com/DmitryBaranovskiy/raphael/master/' ],
