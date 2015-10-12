@@ -2,7 +2,11 @@ Slides for a 3D talk featuring WebGL to illustrate how 3D graphics are rendered.
 
 And I really need to learn how to do proper Javascript.
 
-How to sync:
+You can view it online, although some slides are not rendered correctly that way:
+
+http://rawgit.com/Gnurou/3dgraphics-talk/master/index.html
+
+How to sync for offline use:
 
     git clone https://github.com/Gnurou/3dgraphics-talk.git
     cd 3dgraphics-talk
