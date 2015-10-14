@@ -38,23 +38,6 @@
 		this.add(this.z);
 		this.z.line.material.transparent = true;
 		this.z.cone.material.transparent = true;
-
-		this.axisUpdate = function() {
-			this.axis.setLength(this.m, .2, .2);
-		}
-
-		this.x.meter = { m: 0, axis: this.x };
-		this.x.tween = new TWEEN.Tween(this.x.meter)
-			.to({ m: 4 })
-			.onUpdate(this.axisUpdate);
-		this.y.meter = { m: 0, axis: this.y };
-		this.y.tween = new TWEEN.Tween(this.y.meter)
-			.to({ m: 4 })
-			.onUpdate(this.axisUpdate);
-		this.z.meter = { m: 0, axis: this.z };
-		this.z.tween = new TWEEN.Tween(this.z.meter)
-			.to({ m: 4 })
-			.onUpdate(this.axisUpdate);
 	}
 	Axis.prototype = Object.create(THREE.Object3D.prototype);
 	Axis.prototype.constructor = Axis;

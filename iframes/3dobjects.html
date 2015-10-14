@@ -157,22 +157,14 @@ initComplete = true;
 
 var stateAction = [
 function() {
-	axis.x.meter.m = 0;
-	axis.x.setLength(0, .2, .2);
 	axis.x.visible = false;
-	axis.y.meter.m = 0;
-	axis.y.setLength(0, .2, .2);
 	axis.y.visible = false;
-	axis.z.meter.m = 0;
-	axis.z.setLength(0, .2, .2);
 	axis.z.visible = false;
 
 	point1.visible = false;
 	point2.visible = false;
 	point3.visible = false;
 
-
-	//camera.lookAt(scene.position);
 	camera.lastLookAt = scene.position.clone();
 	camera.position.set(1.5, 1.5, 12);
 
@@ -180,15 +172,33 @@ function() {
 },
 function() {
 	axis.x.visible = true;
-	axis.x.tween.start();
+	axis.x.setLength(0, .2, .2);
+	axis.x.tween = new TWEEN.Tween({m: 0})
+		.to({ m: 4 })
+		.onUpdate(function() {
+			axis.x.setLength(this.m, .2, .2);
+		})
+		.start();
 },
 function() {
 	axis.y.visible = true;
-	axis.y.tween.start();
+	axis.y.setLength(0, .2, .2);
+	axis.y.tween = new TWEEN.Tween({m: 0})
+		.to({ m: 4 })
+		.onUpdate(function() {
+			axis.y.setLength(this.m, .2, .2);
+		})
+		.start();
 },
 function() {
 	axis.z.visible = true;
-	axis.z.tween.start();
+	axis.z.setLength(0, .2, .2);
+	axis.z.tween = new TWEEN.Tween({m: 0})
+		.to({ m: 4 })
+		.onUpdate(function() {
+			axis.z.setLength(this.m, .2, .2);
+		})
+		.start();
 },
 function() {
 	point1.visible = true;
