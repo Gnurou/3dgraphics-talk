@@ -1280,6 +1280,9 @@ gl_FragColor = vec4(texColor.rgb *
 		var frame = getCurrentSlideFrame();
 		var ns = undefined;
 
+		if (!frameLoaded(slide))
+			return;
+
 		if (frame && frame.nextState) {
 			ns = frame.nextState();
 		} else if (slide.nextState) {
@@ -1301,6 +1304,17 @@ gl_FragColor = vec4(texColor.rgb *
 			39: nextFrameState,
 		},
 	});
+
+	function frameLoaded(currentSlide) {
+		var frame = getSlideFrames(currentSlide);
+
+		for (var i = 0; i < frame.length; i++)
+			if (typeof frame[i].scriptReady !== undefined &&
+			    frame[i].scriptReady === false)
+				return false;
+
+		return true;
+	}
 
 	function checkFrame(currentSlide) {
 		var frame = getSlideFrames(currentSlide);
