@@ -721,7 +721,7 @@
 	<h4>Fixed Pipeline</h4>
 	<ul>
 	<li>Lighting limited to a few models</li>
-	<li>Pixel shading limited to color + light + texture + ...</li>
+	<li>Fragment shading limited to color + light + texture + ...</li>
 	<li>More complex shading needs to be delegated to the CPU!</li>
 	</ul>
 	<p>&nbsp;</p>
@@ -801,7 +801,7 @@ lighting = max(dot(faceNormal, lightDirection), 0.0);
 		<tr>
 		<td colspan=4 style="height:3.7em">
 		<div class="showOnly4 showOnly5">
-		Pixel Shader
+		Fragment Shader
 		</div>
 		<div class="showOnly8 showOnly9">
 		<pre>
@@ -929,7 +929,7 @@ gl_FragColor = vec4(texColor.rgb *
 	<h4><del>Fixed Pipeline</del></h4>
 	<ul>
 	<li><del>Lighting limited to a few models</del></li>
-	<li><del>Pixel shading limited to color + light + texture + ...</del></li>
+	<li><del>Fragment shading limited to color + light + texture + ...</del></li>
 	<li><del>More complex shading needs to be delegated to the CPU!</del></li>
 	</ul>
 	<p>&nbsp;</p>
@@ -975,7 +975,7 @@ gl_FragColor = vec4(texColor.rgb *
 		</td></tr>
 		<tr><td>
 		<div id="pshader"></div>
-		Pixel Shaders
+		Fragment Shaders
 		</td></tr>
 		</table>
 		<script>
@@ -1029,7 +1029,7 @@ gl_FragColor = vec4(texColor.rgb *
 	<section>
 	<h2>Unified Shaders (2006)</h2>
 	<ul>
-	<li>Units responsible for vertex and pixel shading merged</li>
+	<li>Units responsible for vertex and fragment shading merged</li>
 	<li>Better use of silicon during extreme workloads</li>
 	<li>The 3D pipeline becomes a <i>logical</i> pipeline</li>
 	<li>GPU becomes General-Purpose: CUDA, OpenCL</li>
