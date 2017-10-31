@@ -56,6 +56,7 @@
 			emissive: 0xffffff,
 			shading: THREE.FlatShading,
 			wireframe: true,
+			wireframeLinewidth: 2.0,
 			side: THREE.DoubleSide,
 		}));
 
@@ -253,7 +254,7 @@ function() {
 	lineGeometry.vertices.push(point1.position);
 	line = new THREE.Line(
 		lineGeometry,
-		new THREE.LineBasicMaterial({color: 0xffffff })
+		new THREE.LineBasicMaterial({color: 0xffffff, linewidth: 2.0 })
 	);
 	scene.add(line);
 },
@@ -845,6 +846,7 @@ function() {
 function() {
 	ico.singleMesh.material.emissive.setHex(0x8888ff);
 	ico.singleMesh.material.wireframe = false;
+	ico.singleMesh.material.wireframeLinewidth = 2.0;
 
 	display.visible = false;
 	ico.visible = false;
@@ -927,6 +929,7 @@ function() {
 
 	ico.frame = new THREE.Mesh(ico.geometry.clone(), ico.material.clone());
 	ico.frame.material.wireframe = true;
+	ico.frame.material.wireframeLinewidth = 2.0;
 
 	ico.material.emissive.setHex(0x8888ff);
 	ico.material.wireframe = false;

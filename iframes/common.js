@@ -17,6 +17,7 @@
 			.2, .2);
 		this.add(this.x);
 		this.x.line.material.transparent = true;
+		this.x.line.material.linewidth = 2.0;
 		this.x.cone.material.transparent = true;
 
 		this.y = new THREE.ArrowHelper(
@@ -27,6 +28,7 @@
 			.2, .2);
 		this.add(this.y);
 		this.y.line.material.transparent = true;
+		this.y.line.material.linewidth = 2.0;
 		this.y.cone.material.transparent = true;
 
 		this.z = new THREE.ArrowHelper(
@@ -37,6 +39,7 @@
 			.2, .2);
 		this.add(this.z);
 		this.z.line.material.transparent = true;
+		this.z.line.material.linewidth = 2.0;
 		this.z.cone.material.transparent = true;
 	}
 	Axis.prototype = Object.create(THREE.Object3D.prototype);
